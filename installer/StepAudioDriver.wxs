@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <Package Name="Step 音频驱动"
+           Manufacturer="Step Audio"
+           Version="1.0.0"
+           UpgradeCode="E4E18DA1-362D-4004-855C-70E75CB38679"
+           Scope="perUser"
+           Compressed="yes"
+           Language="2052"
+           Codepage="936"
+           InstallerVersion="500">
+
+    <SummaryInformation Description="Step 音频驱动 安装程序"
+                        Manufacturer="Step Audio" />
+
+    <MajorUpgrade DowngradeErrorMessage="已安装更新版本的 Step 音频驱动，请先卸载旧版本。" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon.exe" SourceFile="$(sys.SOURCEFILEDIR)..\src\Step.UI\Assets\step.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.exe" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+    <Property Id="ARPNOREPAIR" Value="1" />
+    <Property Id="ARPCOMMENTS" Value="Step 音频驱动" />
+
+    <Launch Condition="VersionNT64" Message="Step 音频驱动 需要 64 位 Windows 10/11。" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Step 音频驱动" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuFolder" Name="Step 音频驱动" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="MainFeature" Title="Step 音频驱动" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+      <ComponentRef Id="DesktopShortcut" />
+    </Feature>
+
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">
+      <Files Include="$(sys.SOURCEFILEDIR)..\artifacts\publish\win-x64\**" />
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <Component Id="StartMenuShortcut" Directory="AppMenuFolder">
+      <Shortcut Id="StartMenuShortcutLink"
+                Name="Step 音频驱动"
+                Description="Step 音频驱动"
+                Target="[INSTALLFOLDER]StepAudioDriver.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.exe" />
+      <RemoveFolder Id="RemoveAppMenuFolder" On="uninstall" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\StepAudioDriver"
+                     Name="StartMenuShortcut"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+
+    <Component Id="DesktopShortcut" Directory="DesktopFolder">
+      <Shortcut Id="DesktopShortcutLink"
+                Name="Step 音频驱动"
+                Description="Step 音频驱动"
+                Target="[INSTALLFOLDER]StepAudioDriver.exe"
+                WorkingDirectory="INSTALLFOLDER"
+                Icon="AppIcon.exe" />
+      <RegistryValue Root="HKCU"
+                     Key="Software\StepAudioDriver"
+                     Name="DesktopShortcut"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+    </Component>
+  </Fragment>
+
+</Wix>

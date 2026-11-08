@@ -35,13 +35,13 @@ WASAPI 输出（独占 → 共享 → 降级格式，自动回退）
 
 | 文件 | 改动 |
 |---|---|
-| `src/SK02.Core/Audio/LoopbackCaptureEngine.cs` | 只做捕获与 byte→float 转换，删除内部第二次 DSP 调用；修正 24-bit 符号扩展；只转换完整帧；暴露设备名 |
-| `src/SK02.Core/Audio/RealTimeAudioProcessor.cs` | 构造参数改为输出设备；统一立体声输出；任意声道下混；HRTF 阶段默认旁路（`HrtfEnabled=false`）；错误只上报不抛出；增加 `InputPeak`、帧计数 |
-| `src/SK02.Core/Audio/WASAPIOutputEngine.cs` | 输出格式由调用方给定并支持降级；缓冲从 2s 改为 100ms；按实际格式转换（16/24/32bit、32f）；输出设备解析跳过虚拟线缆；新增溢出丢弃计数 |
-| `src/SK02.Core/Audio/DSP/EqualizerEngine.cs` | 每声道独立滤波状态；支持自定义中心频率/Q；系数快照原子替换（UI 与音频线程安全）；数值异常保护 |
-| `src/SK02.Core/Audio/WaveFormatExtensions.cs` | 处理 WAVE_FORMAT_EXTENSIBLE 的 float 判断（否则 32f 会被当 PCM） |
-| `src/SK02.Core/Performance/PerformanceMonitor.cs` | CPU 采样改为差分计算，移出音频线程；延迟队列加锁 |
-| `src/SK02.UI/MainWindow.xaml(.cs)` | 顶部状态栏与启动/停止按钮；EQ/HRTF/设备/旋钮全部接到处理器；移除每次切预设的模态弹框；关闭窗口时正确释放设备 |
+| `src/Step.Core/Audio/LoopbackCaptureEngine.cs` | 只做捕获与 byte→float 转换，删除内部第二次 DSP 调用；修正 24-bit 符号扩展；只转换完整帧；暴露设备名 |
+| `src/Step.Core/Audio/RealTimeAudioProcessor.cs` | 构造参数改为输出设备；统一立体声输出；任意声道下混；HRTF 阶段默认旁路（`HrtfEnabled=false`）；错误只上报不抛出；增加 `InputPeak`、帧计数 |
+| `src/Step.Core/Audio/WASAPIOutputEngine.cs` | 输出格式由调用方给定并支持降级；缓冲从 2s 改为 100ms；按实际格式转换（16/24/32bit、32f）；输出设备解析跳过虚拟线缆；新增溢出丢弃计数 |
+| `src/Step.Core/Audio/DSP/EqualizerEngine.cs` | 每声道独立滤波状态；支持自定义中心频率/Q；系数快照原子替换（UI 与音频线程安全）；数值异常保护 |
+| `src/Step.Core/Audio/WaveFormatExtensions.cs` | 处理 WAVE_FORMAT_EXTENSIBLE 的 float 判断（否则 32f 会被当 PCM） |
+| `src/Step.Core/Performance/PerformanceMonitor.cs` | CPU 采样改为差分计算，移出音频线程；延迟队列加锁 |
+| `src/Step.UI/MainWindow.xaml(.cs)` | 顶部状态栏与启动/停止按钮；EQ/HRTF/设备/旋钮全部接到处理器；移除每次切预设的模态弹框；关闭窗口时正确释放设备 |
 
 ## 峰值处理（避免鼓点破音）
 
@@ -68,7 +68,7 @@ WASAPI 输出（独占 → 共享 → 降级格式，自动回退）
 ## 手动验证
 
 1. 播放器/游戏的输出设备设为 **CABLE Input (VB-Audio Virtual Cable)**
-2. 启动 `src/SK02.UI/bin/Debug/net8.0-windows/SK02.UI.exe`
+2. 启动 `src/Step.UI/bin/Debug/net8.0-windows/StepAudioDriver.exe`
 3. 点击右上角 **▶ 启动音频**，状态应变绿并显示「运行中」
 4. 播放音乐，耳机应能听到；拖动 EQ 滑块应立即听出变化
 5. 点击 **■ 停止音频** 恢复直通（游戏仍走 CABLE，但不再经过本程序）
@@ -78,4 +78,4 @@ WASAPI 输出（独占 → 共享 → 降级格式，自动回退）
 1. ~~**HRTF 未接入**~~ → 已在步骤 2 接入，见 [HRTF_SPATIALIZER_STEP2.md](HRTF_SPATIALIZER_STEP2.md)。目前 HRIR 为参数化模型，不是实测数据。
 2. **延迟**：当前约 30–70 ms（100 ms 缓冲区 + WASAPI 共享缓冲），FPS 目标需要降到 20 ms 级；需要更小的缓冲与时钟漂移补偿。
 3. **无单元测试**：本次验证是脚本级冒烟测试，尚未落地到 xunit。
-4. **`SK02.Service` 仍为空**，`.bak` 文件、CSCore 无用依赖、乱码注释等遗留问题未清理。
+4. **`Step.Service` 仍为空**，`.bak` 文件、CSCore 无用依赖、乱码注释等遗留问题未清理。

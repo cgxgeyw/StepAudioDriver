@@ -44,16 +44,16 @@
 
 | 文件 | 内容 |
 |---|---|
-| `src/SK02.Core/Audio/HRTF/FftN.cs` | 定长 radix-2 FFT（原地、无分配） |
-| `src/SK02.Core/Audio/HRTF/ParametricHrir.cs` | 参数化 HRIR 生成（球头 + 耳廓 + 躯干） |
-| `src/SK02.Core/Audio/HRTF/SpeakerConvolver.cs` | 单只扬声器的双耳 overlap-add 卷积 |
-| `src/SK02.Core/Audio/HRTF/HrtfSpatializer.cs` | 扬声器布局、分块、干湿混合、宽度重建 |
-| `src/SK02.Core/Audio/HRTF/DirectionalTestTone.cs` | 方向试听信号生成 + 任意方位双耳卷积 |
-| `src/SK02.Core/Audio/DirectionalTestPlayer.cs` | 未启动主链路时的独立试听输出 |
-| `src/SK02.Core/Audio/RealTimeAudioProcessor.cs` | 接入空间化器；删除旧固定增益“7.1”；`HrtfEnabled` 默认开启；支持指定捕获设备；测试音混音 |
-| `src/SK02.Core/Audio/LoopbackCaptureEngine.cs` | 支持按设备 ID 捕获（7.1 用 `CABLE In 16ch`） |
-| `src/SK02.Core/Audio/WaveFormatExtensions.cs` | 32-bit float 的 EXTENSIBLE 判定（上一阶段补充） |
-| `src/SK02.UI/MainWindow.xaml(.cs)` | 7.1 页新增“启用虚拟环绕”开关；设置页新增“捕获设备（游戏输出）”下拉；宽度/强度实时生效 |
+| `src/Step.Core/Audio/HRTF/FftN.cs` | 定长 radix-2 FFT（原地、无分配） |
+| `src/Step.Core/Audio/HRTF/ParametricHrir.cs` | 参数化 HRIR 生成（球头 + 耳廓 + 躯干） |
+| `src/Step.Core/Audio/HRTF/SpeakerConvolver.cs` | 单只扬声器的双耳 overlap-add 卷积 |
+| `src/Step.Core/Audio/HRTF/HrtfSpatializer.cs` | 扬声器布局、分块、干湿混合、宽度重建 |
+| `src/Step.Core/Audio/HRTF/DirectionalTestTone.cs` | 方向试听信号生成 + 任意方位双耳卷积 |
+| `src/Step.Core/Audio/DirectionalTestPlayer.cs` | 未启动主链路时的独立试听输出 |
+| `src/Step.Core/Audio/RealTimeAudioProcessor.cs` | 接入空间化器；删除旧固定增益“7.1”；`HrtfEnabled` 默认开启；支持指定捕获设备；测试音混音 |
+| `src/Step.Core/Audio/LoopbackCaptureEngine.cs` | 支持按设备 ID 捕获（7.1 用 `CABLE In 16ch`） |
+| `src/Step.Core/Audio/WaveFormatExtensions.cs` | 32-bit float 的 EXTENSIBLE 判定（上一阶段补充） |
+| `src/Step.UI/MainWindow.xaml(.cs)` | 7.1 页新增“启用虚拟环绕”开关；设置页新增“捕获设备（游戏输出）”下拉；宽度/强度实时生效 |
 
 ## 实测（本机 RTX/48kHz）
 

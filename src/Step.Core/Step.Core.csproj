@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>false</UseWPF>
+    <AssemblyName>Step.Core</AssemblyName>
+    <RootNamespace>Step.Core</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 音频处理 -->
+    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+
+    <!-- DSP 和滤波 -->
+    <PackageReference Include="CSCore" Version="1.2.1.2" />
+
+    <!-- 数学计算 (FFT 卷积) -->
+    <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+
+    <!-- USB HID -->
+    <PackageReference Include="HidSharp" Version="2.5.0" />
+
+    <!-- 配置文件 -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+
+    <!-- 日志 -->
+    <PackageReference Include="Serilog" Version="3.0.1" />
+    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
+  </ItemGroup>
+
+</Project>

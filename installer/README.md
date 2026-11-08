@@ -1,9 +1,9 @@
-# SK02 Control Center 安装包
+# Step 音频驱动 安装包
 
 ## 文件
 
-- `SK02ControlCenter-1.0.0.msi`：Windows 安装包（64 位，自带 .NET 8 运行时）
-- `SK02ControlCenter-1.0.0.sha256`：安装包校验值
+- `StepAudioDriver-1.0.0.msi`：Windows 安装包（64 位，自带 .NET 8 运行时）
+- `StepAudioDriver-1.0.0.sha256`：安装包校验值
 
 ## 系统要求
 
@@ -15,17 +15,17 @@ VB-CABLE 不随安装包分发，请从 [VB-Audio 官网](https://vb-audio.com/C
 
 ## 安装
 
-1. 双击 `SK02ControlCenter-1.0.0.msi`
+1. 双击 `StepAudioDriver-1.0.0.msi`
 2. 按提示完成；安装范围为**当前用户**，不需要管理员权限
-3. 开始菜单和桌面会创建 `SK02 Control Center` 快捷方式
+3. 开始菜单和桌面会创建 `Step 音频驱动` 快捷方式
 
 安装目录：
 
 ```
-%LOCALAPPDATA%\Programs\SK02 Control Center
+%LOCALAPPDATA%\Programs\Step 音频驱动
 ```
 
-卸载：Windows 设置 → 应用 → 已安装的应用 → SK02 Control Center。
+卸载：Windows 设置 → 应用 → 已安装的应用 → Step 音频驱动。
 
 ## 注意
 

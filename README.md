@@ -1,12 +1,12 @@
-# SK02 Control Center
+# Step 音频驱动
 
-[![Release](https://img.shields.io/github/v/release/cgxgeyw/SK02AudioDriver?display_name=tag)](https://github.com/cgxgeyw/SK02AudioDriver/releases/latest)
+[![Release](https://img.shields.io/github/v/release/cgxgeyw/StepAudioDriver?display_name=tag)](https://github.com/cgxgeyw/StepAudioDriver/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D6)](https://github.com/cgxgeyw/SK02AudioDriver)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D6)](https://github.com/cgxgeyw/StepAudioDriver)
 
 面向 FPS 游戏与日常听歌的 Windows 虚拟 7.1 音频控制中心。为 **Fosi Audio SK02** 优化，也支持其它 WASAPI 输出设备。
 
-![SK02 Control Center](docs/images/presets-redesign.png)
+![Step 音频驱动](docs/images/presets-redesign.png)
 
 ## 功能
 
@@ -34,16 +34,16 @@
 
 ## 安装
 
-从 [Releases](https://github.com/cgxgeyw/SK02AudioDriver/releases/latest) 下载：
+从 [Releases](https://github.com/cgxgeyw/StepAudioDriver/releases/latest) 下载：
 
 ```
-SK02ControlCenter-1.0.0.msi
+StepAudioDriver-1.0.0.msi
 ```
 
 双击安装即可。安装范围为当前用户，目录：
 
 ```
-%LOCALAPPDATA%\Programs\SK02 Control Center
+%LOCALAPPDATA%\Programs\Step 音频驱动
 ```
 
 ### 前置条件
@@ -57,7 +57,7 @@ SK02ControlCenter-1.0.0.msi
 ## 快速开始
 
 1. 把游戏/播放器输出设为 `CABLE Input`
-2. 打开 SK02 Control Center，选择捕获设备和输出设备
+2. 打开 Step 音频驱动，选择捕获设备和输出设备
 3. FPS 游戏点「游戏模式」；日常听歌直接选预设
 4. 如果使用本软件的虚拟 7.1：
    - 游戏内 HRTF / 7.1 虚拟化关掉
@@ -85,7 +85,7 @@ SK02ControlCenter-1.0.0.msi
 
 - .NET 8 / WPF / C# 12
 - NAudio 2.2.1（WASAPI loopback、独占/共享输出）
-- Rust `cdylib`（`rust/sk02-dsp`）+ C ABI / P/Invoke
+- Rust `cdylib`（`rust/step-dsp`）+ C ABI / P/Invoke
 - WiX 5 MSI 安装包
 
 ### 音频链路
@@ -108,7 +108,7 @@ CABLE 8ch 捕获
 - Windows 10/11 x64
 
 ```powershell
-dotnet build SK02AudioDriver.sln -c Debug
+dotnet build StepAudioDriver.sln -c Debug
 start.bat
 ```
 
@@ -123,21 +123,21 @@ pwsh installer/build-installer.ps1
 ### 重新编译 Rust DSP
 
 ```powershell
-cd rust/sk02-dsp
+cd rust/step-dsp
 cargo build --release
-copy target\release\sk02_dsp.dll ..\..\src\SK02.UI\native\sk02_dsp.dll
+copy target\release\step_dsp.dll ..\..\src\Step.UI\native\step_dsp.dll
 ```
 
-C# 回退：设置环境变量 `SK02_DISABLE_NATIVE_HRTF=1`。
+C# 回退：设置环境变量 `STEP_DISABLE_NATIVE_HRTF=1`。
 
 ## 目录结构
 
 ```
 src/
-  SK02.Core/      音频处理、HRTF、EQ、预设、设备
-  SK02.UI/        WPF 界面、native/sk02_dsp.dll
-  SK02.Service/   后台服务
-rust/sk02-dsp/    Rust HRTF DSP
+  Step.Core/      音频处理、HRTF、EQ、预设、设备
+  Step.UI/        WPF 界面、native/step_dsp.dll
+  Step.Service/   后台服务
+rust/step-dsp/    Rust HRTF DSP
 installer/        WiX MSI 与打包脚本
 docs/             技术文档与截图
 tests/            xUnit 测试
@@ -156,7 +156,7 @@ tests/            xUnit 测试
 欢迎 Issue / PR。提交前请至少运行：
 
 ```powershell
-dotnet build SK02AudioDriver.sln -c Debug
+dotnet build StepAudioDriver.sln -c Debug
 ```
 
 ## License

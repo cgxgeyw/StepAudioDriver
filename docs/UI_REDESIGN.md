@@ -86,7 +86,7 @@
 - **输出格式**：可选 自动 / 48 kHz 32-bit float / 96 / 192 / 384 kHz 24-bit；启动后显示实际协商结果（含独占/共享）
 - **7.1 快速配置**：`一键配置 7.1` 直接把 `CABLE In 16ch` 端点切成 8 声道（`IPolicyConfig`，不需要管理员权限），可选同时设为默认播放设备；`恢复 2.0` 会还原声道和之前的默认设备
 - **游戏模式**：一键完成 8 声道配置 + 设为默认 + 选中捕获 + 应用「游戏」预设 + 打开虚拟环绕 + 启动音频；PUBG 自己的 HRTF/7.1 选项仍需在游戏内设置一次
-- **Rust DSP**：8 声道 HRTF 卷积已换成 Rust 原生核心（`sk02_dsp.dll`），256-tap 音质不变，实测 0.46ms/10ms；DLL 缺失自动回退 C#（见 [RUST_DSP_CORE.md](RUST_DSP_CORE.md)）
+- **Rust DSP**：8 声道 HRTF 卷积已换成 Rust 原生核心（`step_dsp.dll`），256-tap 音质不变，实测 0.46ms/10ms；DLL 缺失自动回退 C#（见 [RUST_DSP_CORE.md](RUST_DSP_CORE.md)）
 - **缓冲档位**：稳定（100 ms）/ 平衡（60 ms）/ 低延迟（40 ms），捕获与输出同时生效，默认稳定；改动后需重新启动音频
 - **输出优先独占**：先尝试独占；设备不支持独占（如 N9V2 dongle）自动回退共享；设备被占用则直接报错，不做混音；启动时自动把 Windows 默认播放切到当前捕获的虚拟线，停止/关闭时还原
 - 启动时如果检测到某个虚拟线已经是 5.1/7.1，会自动优先选中它（不用每次手动选捕获设备）
@@ -129,7 +129,7 @@
 ![启动恢复](images/startup-restored.png)
 
 - 预设改为在窗口显示前同步加载，启动瞬间就能看到预设列表，不再空白
-- 关闭时写入 `%APPDATA%\SK02AudioDriver\ui-settings.json`：上次预设、10 段 EQ/频率/Q、HRTF 开关与强度、环绕宽度、直通、捕获/输出设备、输出格式、缓冲档位、默认设备勾选
+- 关闭时写入 `%APPDATA%\StepAudioDriver\ui-settings.json`：上次预设、10 段 EQ/频率/Q、HRTF 开关与强度、环绕宽度、直通、捕获/输出设备、输出格式、缓冲档位、默认设备勾选
 - 下次启动在设备枚举完成后恢复；设备 ID 不存在时回退默认选项
 - 强制结束进程不会触发保存
 
@@ -137,7 +137,7 @@
 
 - `dotnet build`：0 错误
 - 截图：三个页面见上（1600 × 1000，125% 缩放）
-- 交互自测：Debug 构建带 `--ui-selftest` 启动时，会选中「自定义」并把 500 Hz 段拖到 700 Hz / +6 dB，结果写入 `%TEMP%\sk02-ui-selftest.txt`：
+- 交互自测：Debug 构建带 `--ui-selftest` 启动时，会选中「自定义」并把 500 Hz 段拖到 700 Hz / +6 dB，结果写入 `%TEMP%\step-ui-selftest.txt`：
   `preset=custom freq=700 gain=6.0 box='6.0' freqBox='700' response700=6.14dB selected=4`
 - 只读自测：`--ui-locktest` 选中「游戏」，控件禁用并显示“只读”（见上方截图）
 - 音频链路回归：UI 自动化点击启动 → `运行中 · CABLE Input → 耳机`，延迟 2.7 ms、缓冲 55%，停止/再次启动正常

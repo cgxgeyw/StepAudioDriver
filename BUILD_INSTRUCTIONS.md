@@ -1,4 +1,4 @@
-# SK02 驱动构建说明
+# Step 音频驱动构建说明
 
 ## 系统要求
 
@@ -21,16 +21,16 @@ dotnet --version
 
 ### 2. 使用 Visual Studio 2022
 
-1. 打开 `SK02AudioDriver.sln`
+1. 打开 `StepAudioDriver.sln`
 2. Visual Studio 会自动还原 NuGet 包
-3. 选择 `SK02.UI` 为启动项目
+3. 选择 `Step.UI` 为启动项目
 4. 按 `F5` 运行
 
 ### 3. 使用命令行
 
 ```powershell
 # 进入项目目录
-cd <你的仓库目录>\SK02AudioDriver
+cd <你的仓库目录>\StepAudioDriver
 
 # 还原依赖
 dotnet restore
@@ -42,7 +42,7 @@ dotnet build -c Debug
 dotnet build -c Release
 
 # 运行应用
-dotnet run --project src/SK02.UI/SK02.UI.csproj
+dotnet run --project src/Step.UI/Step.UI.csproj
 ```
 
 ## 项目配置
@@ -51,9 +51,9 @@ dotnet run --project src/SK02.UI/SK02.UI.csproj
 
 所有项目均针对 `.NET 8.0-windows`：
 
-- **SK02.Core** - 类库
-- **SK02.UI** - WPF 应用程序
-- **SK02.Service** - 类库
+- **Step.Core** - 类库
+- **Step.UI** - WPF 应用程序
+- **Step.Service** - 类库
 - **测试项目** - 单元测试
 
 ### NuGet 依赖
@@ -177,15 +177,15 @@ pwsh installer/build-installer.ps1
 输出：
 
 ```
-artifacts/installer/SK02ControlCenter-1.0.0.msi
-artifacts/installer/SK02ControlCenter-1.0.0.sha256
+artifacts/installer/StepAudioDriver-1.0.0.msi
+artifacts/installer/StepAudioDriver-1.0.0.sha256
 ```
 
 脚本会：
 
-1. `dotnet publish` 自包含发布 `src/SK02.UI` 到 `artifacts/publish/win-x64`
+1. `dotnet publish` 自包含发布 `src/Step.UI` 到 `artifacts/publish/win-x64`
 2. 如本机没有 WiX，则安装到 `artifacts/tools`
-3. 编译 `installer/SK02ControlCenter.wxs`
+3. 编译 `installer/StepAudioDriver.wxs`
 4. 生成 SHA256 校验文件
 
 安装包要求：Windows 10/11 x64、已安装 VB-CABLE。详细说明见 `installer/README.md`。

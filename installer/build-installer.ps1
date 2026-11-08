@@ -14,7 +14,7 @@ if (Test-Path $publishDir) {
     Remove-Item $publishDir -Recurse -Force
 }
 
-dotnet publish (Join-Path $root 'src\SK02.UI\SK02.UI.csproj') `
+dotnet publish (Join-Path $root 'src\Step.UI\Step.UI.csproj') `
     -c $Configuration `
     -r $Runtime `
     --self-contained true `
@@ -31,13 +31,13 @@ if (-not (Test-Path $wix)) {
 
 New-Item -ItemType Directory -Force $installerDir | Out-Null
 
-& $wix build (Join-Path $PSScriptRoot 'SK02ControlCenter.wxs') `
+& $wix build (Join-Path $PSScriptRoot 'StepAudioDriver.wxs') `
     -arch x64 `
-    -o (Join-Path $installerDir 'SK02ControlCenter-1.0.0.msi')
+    -o (Join-Path $installerDir 'StepAudioDriver-1.0.0.msi')
 
-$msi = Join-Path $installerDir 'SK02ControlCenter-1.0.0.msi'
+$msi = Join-Path $installerDir 'StepAudioDriver-1.0.0.msi'
 $hash = (Get-FileHash $msi -Algorithm SHA256).Hash
-"$hash  SK02ControlCenter-1.0.0.msi" |
-    Set-Content (Join-Path $installerDir 'SK02ControlCenter-1.0.0.sha256') -Encoding ASCII
+"$hash  StepAudioDriver-1.0.0.msi" |
+    Set-Content (Join-Path $installerDir 'StepAudioDriver-1.0.0.sha256') -Encoding ASCII
 
 Write-Host "MSI: $msi"
