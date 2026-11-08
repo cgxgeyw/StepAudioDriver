@@ -497,6 +497,7 @@
                   StrokeThickness="2" StrokeLineJoin="Round"/>
           </Button>
           <Button x:Name="BtnClose" Style="{StaticResource CaptionCloseButton}"
+                  AutomationProperties.AutomationId="BtnCloseWindow"
                   Click="BtnClose_Click">
             <Path Data="M 0,0 L 12,12 M 12,0 L 0,12"
                   Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
@@ -799,6 +800,25 @@
                         Content="开机自动启动（最小化到任务栏）"
                         Checked="ChkAutoStart_Changed"
                         Unchecked="ChkAutoStart_Changed"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="程序" FontSize="13" Foreground="{StaticResource BrText1}"
+                         VerticalAlignment="Center"/>
+              <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <Button Style="{StaticResource GhostButton}"
+                        AutomationProperties.AutomationId="BtnExitApp"
+                        Content="退出程序" Width="100" Height="30"
+                        Click="BtnExitApp_Click"/>
+                <Button Style="{StaticResource GhostButton}"
+                        AutomationProperties.AutomationId="BtnResetCloseChoice"
+                        Content="恢复关闭询问" Width="116" Height="30"
+                        Margin="8,0,0,0" Click="BtnResetCloseChoice_Click"/>
+              </StackPanel>
             </Grid>
 
             <Border Height="1" Background="{StaticResource BrBorder}" Margin="0,0,0,20"/>

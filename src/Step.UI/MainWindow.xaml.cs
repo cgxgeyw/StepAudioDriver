@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -34,6 +35,10 @@ public partial class MainWindow : Window
     private bool _isStartingAudio;
     private bool _isRecoveringAudio;
     private bool _syncingAutoStart;
+    private bool _rememberCloseChoice;
+    private string? _closeAction;
+    private bool _forceClose;
+    private bool _closeDialogOpen;
     private int _recoveryAttempts;
     private DateTime _recoveryWindowStart = DateTime.UtcNow;
     private string _selectedDeviceId = string.Empty;
@@ -100,6 +105,9 @@ public partial class MainWindow : Window
         InitializePresetsAtStartup();
 
         Loaded += MainWindow_Loaded;
+
+        if (Application.Current != null)
+            Application.Current.SessionEnding += (_, _) => _forceClose = true;
 
 #if DEBUG
         // 仅调试构建：--ui-selftest 用程序方式跑一遍预设 + 拖动逻辑，便于无人值守验证
@@ -330,7 +338,89 @@ public partial class MainWindow : Window
 
     private void BtnClose_Click(object sender, RoutedEventArgs e)
     {
+        RequestClose();
+    }
+
+    private void BtnExitApp_Click(object sender, RoutedEventArgs e)
+    {
+        _forceClose = true;
         Close();
+    }
+
+    private void BtnResetCloseChoice_Click(object sender, RoutedEventArgs e)
+    {
+        _rememberCloseChoice = false;
+        _closeAction = null;
+
+        try { UiSettingsStore.Save(CaptureUiSettings()); }
+        catch { /* 忽略 */ }
+    }
+
+    private void RequestClose()
+    {
+        if (_forceClose)
+        {
+            Close();
+            return;
+        }
+
+        if (_rememberCloseChoice &&
+            (_closeAction == "minimize" || _closeAction == "exit"))
+        {
+            ApplyCloseChoice(_closeAction);
+            return;
+        }
+
+        if (_closeDialogOpen)
+            return;
+
+        _closeDialogOpen = true;
+
+        try
+        {
+            var dialog = new CloseChoiceDialog { Owner = this };
+
+            if (dialog.ShowDialog() != true)
+                return;
+
+            if (dialog.Remember)
+            {
+                _rememberCloseChoice = true;
+                _closeAction = dialog.Choice;
+
+                try { UiSettingsStore.Save(CaptureUiSettings()); }
+                catch { /* 忽略 */ }
+            }
+
+            ApplyCloseChoice(dialog.Choice);
+        }
+        finally
+        {
+            _closeDialogOpen = false;
+        }
+    }
+
+    private void ApplyCloseChoice(string? choice)
+    {
+        if (choice == "minimize")
+        {
+            WindowState = WindowState.Minimized;
+            return;
+        }
+
+        _forceClose = true;
+        Close();
+    }
+
+    protected override void OnClosing(CancelEventArgs e)
+    {
+        if (!_forceClose)
+        {
+            e.Cancel = true;
+            _ = Dispatcher.BeginInvoke(new Action(RequestClose), DispatcherPriority.Normal);
+        }
+
+        base.OnClosing(e);
     }
 
     private void ToggleMaximize()
@@ -2832,6 +2922,13 @@ public partial class MainWindow : Window
         if (saved.OverlayVisible.HasValue)
             ChkDirectionOverlay.IsChecked = saved.OverlayVisible.Value;
 
+        if (saved.CloseActionRemembered == true &&
+            (saved.CloseAction == "minimize" || saved.CloseAction == "exit"))
+        {
+            _rememberCloseChoice = true;
+            _closeAction = saved.CloseAction;
+        }
+
         if (saved.SetDefaultDevice.HasValue)
             ChkSetDefaultDevice.IsChecked = saved.SetDefaultDevice.Value;
 
@@ -2882,6 +2979,8 @@ public partial class MainWindow : Window
             OverlayVisible = ChkDirectionOverlay.IsChecked == true,
             OverlayLeft = _directionOverlay?.Left,
             OverlayTop = _directionOverlay?.Top,
+            CloseAction = _closeAction,
+            CloseActionRemembered = _rememberCloseChoice,
             CaptureDeviceId = (CaptureDeviceComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString(),
             OutputDeviceId = (DeviceComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString(),
             OutputFormatTag = (OutputFormatComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString(),

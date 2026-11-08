@@ -1,0 +1,80 @@
+<Window x:Class="Step.UI.CloseChoiceDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Close Step Audio Driver"
+        Width="430" Height="252"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Microsoft YaHei UI"
+        KeyDown="Window_KeyDown">
+
+    <Border Margin="14" Background="#101215" BorderBrush="#3A424C"
+            BorderThickness="2" CornerRadius="14">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="6" Opacity="0.55" Color="Black"/>
+        </Border.Effect>
+
+        <Grid Margin="22,16,22,18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <TextBlock Text="关闭 Step 音频驱动"
+                           FontSize="15" FontWeight="SemiBold"
+                           Foreground="#ECEEF1" VerticalAlignment="Center"/>
+            </Grid>
+
+            <StackPanel Grid.Row="1" Margin="0,16,0,0">
+                <TextBlock Text="要最小化到任务栏，还是完全退出？"
+                           FontSize="13" Foreground="#ECEEF1"/>
+                <TextBlock Text="最小化后音频继续运行；退出会停止音频并释放设备。"
+                           FontSize="11.5" Foreground="#8B939E"
+                           TextWrapping="Wrap" Margin="0,6,0,0"/>
+
+                <CheckBox x:Name="ChkRemember"
+                          AutomationProperties.AutomationId="ChkRememberClose"
+                          Content="记住我的选择，以后不再询问"
+                          FontSize="11.5" Foreground="#A3AAB4"
+                          Margin="0,14,0,0"/>
+            </StackPanel>
+
+            <Grid Grid.Row="2" Margin="0,16,0,0">
+                <Button Content="取消"
+                        AutomationProperties.AutomationId="BtnCloseCancel"
+                        HorizontalAlignment="Left"
+                        Width="76" Height="32"
+                        Background="Transparent"
+                        Foreground="#A3AAB4"
+                        BorderBrush="#3A424C"
+                        BorderThickness="1"
+                        Click="BtnCancel_Click"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="退出程序"
+                            AutomationProperties.AutomationId="BtnCloseExit"
+                            Width="96" Height="32"
+                            Background="#252A31"
+                            Foreground="#ECEEF1"
+                            BorderBrush="#3A424C"
+                            BorderThickness="1"
+                            Margin="0,0,8,0"
+                            Click="BtnExit_Click"/>
+                    <Button Content="最小化到任务栏"
+                            AutomationProperties.AutomationId="BtnCloseMinimize"
+                            Width="132" Height="32"
+                            Background="#E8A33D"
+                            Foreground="#111318"
+                            BorderThickness="0"
+                            Click="BtnMinimize_Click"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

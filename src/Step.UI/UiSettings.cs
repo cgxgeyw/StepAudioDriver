@@ -30,6 +30,9 @@ public sealed class UiSettings
     public double? OverlayLeft { get; set; }
     public double? OverlayTop { get; set; }
 
+    public string? CloseAction { get; set; }
+    public bool? CloseActionRemembered { get; set; }
+
     public string? CaptureDeviceId { get; set; }
     public string? OutputDeviceId { get; set; }
     public string? OutputFormatTag { get; set; }
