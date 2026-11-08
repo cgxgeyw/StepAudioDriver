@@ -28,6 +28,11 @@ public class LoopbackCaptureEngine : IDisposable
     public event EventHandler<Exception>? CaptureError;
 
     /// <summary>
+    /// 捕获端点停止（设备切换、驱动重置、USB 休眠等），无异常时也会触发
+    /// </summary>
+    public event EventHandler<Exception?>? CaptureStopped;
+
+    /// <summary>
     /// 当前捕获设备名称（用于状态显示、反馈回路检测）
     /// </summary>
     public string? CaptureDeviceName => _captureDevice?.FriendlyName;
@@ -186,6 +191,10 @@ public class LoopbackCaptureEngine : IDisposable
         if (e.Exception != null)
         {
             CaptureError?.Invoke(this, e.Exception);
+        }
+        else
+        {
+            CaptureStopped?.Invoke(this, null);
         }
     }
 
