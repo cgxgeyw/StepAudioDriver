@@ -60,6 +60,7 @@ public class RealTimeAudioProcessor : IDisposable
 
     // 状态
     private bool _isRunning;
+    private bool _intentionalStop;
     private bool _disposed;
 
     /// <summary>
@@ -79,6 +80,11 @@ public class RealTimeAudioProcessor : IDisposable
     /// 处理错误（捕获错误、输出错误、处理异常）
     /// </summary>
     public event EventHandler<ProcessingErrorEventArgs>? ProcessingError;
+
+    /// <summary>
+    /// 捕获/输出端点停止，但处理器本身仍处于运行状态（需要外部重建链路）
+    /// </summary>
+    public event EventHandler<PipelineStoppedEventArgs>? PipelineStopped;
 
     /// <summary>
     /// 性能更新（保留，当前由 UI 定时轮询 <see cref="GetPerformanceReport"/>）
@@ -104,7 +110,9 @@ public class RealTimeAudioProcessor : IDisposable
 
         _captureEngine.AudioDataAvailable += OnAudioDataAvailable;
         _captureEngine.CaptureError += OnCaptureError;
+        _captureEngine.CaptureStopped += OnCaptureStopped;
         _outputEngine.OutputError += OnOutputError;
+        _outputEngine.PlaybackStopped += OnPlaybackStopped;
     }
 
     /// <summary>捕获格式（初始化后可用）</summary>
@@ -124,6 +132,9 @@ public class RealTimeAudioProcessor : IDisposable
 
     /// <summary>是否正在运行</summary>
     public bool IsRunning => _isRunning;
+
+    /// <summary>捕获端点是否仍在接收</summary>
+    public bool IsCaptureActive => _captureEngine.IsCapturing;
 
     /// <summary>最近一个音频块的下混峰值（0-1），用于判断是否有信号</summary>
     public float InputPeak => _inputPeak;
@@ -217,6 +228,7 @@ public class RealTimeAudioProcessor : IDisposable
             return;
 
         _isRunning = false;
+        _intentionalStop = true;
 
         lock (_testToneSync)
         {
@@ -224,8 +236,15 @@ public class RealTimeAudioProcessor : IDisposable
             _testTonePosition = 0;
         }
 
-        _captureEngine.Stop();
-        _outputEngine.Stop();
+        try
+        {
+            _captureEngine.Stop();
+            _outputEngine.Stop();
+        }
+        finally
+        {
+            _intentionalStop = false;
+        }
 
         Debug.WriteLine("实时音频处理已停止");
     }
@@ -425,6 +444,25 @@ public class RealTimeAudioProcessor : IDisposable
         ProcessingError?.Invoke(this, new ProcessingErrorEventArgs(ex));
     }
 
+    private void OnCaptureStopped(object? sender, Exception? ex)
+    {
+        if (_intentionalStop || !_isRunning)
+            return;
+
+        PipelineStopped?.Invoke(this, new PipelineStoppedEventArgs("捕获设备已停止", ex));
+    }
+
+    private void OnPlaybackStopped(object? sender, Exception? ex)
+    {
+        if (_intentionalStop || !_isRunning)
+            return;
+
+        if (ex != null)
+            ProcessingError?.Invoke(this, new ProcessingErrorEventArgs(ex));
+        else
+            PipelineStopped?.Invoke(this, new PipelineStoppedEventArgs("输出设备已停止", null));
+    }
+
     /// <summary>
     /// 设置 HRTF 干湿比（0.5 微弱 ~ 2.0 全湿）
     /// </summary>
@@ -575,7 +613,9 @@ public class RealTimeAudioProcessor : IDisposable
         Stop();
         _captureEngine.AudioDataAvailable -= OnAudioDataAvailable;
         _captureEngine.CaptureError -= OnCaptureError;
+        _captureEngine.CaptureStopped -= OnCaptureStopped;
         _outputEngine.OutputError -= OnOutputError;
+        _outputEngine.PlaybackStopped -= OnPlaybackStopped;
 
         SafeDispose();
     }
@@ -590,6 +630,21 @@ public class ProcessingErrorEventArgs : EventArgs
 
     public ProcessingErrorEventArgs(Exception exception)
     {
+        Exception = exception;
+    }
+}
+
+/// <summary>
+/// 捕获/输出端点停止事件参数。
+/// </summary>
+public class PipelineStoppedEventArgs : EventArgs
+{
+    public string Reason { get; }
+    public Exception? Exception { get; }
+
+    public PipelineStoppedEventArgs(string reason, Exception? exception)
+    {
+        Reason = reason;
         Exception = exception;
     }
 }

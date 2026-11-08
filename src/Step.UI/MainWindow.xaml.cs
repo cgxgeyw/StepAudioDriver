@@ -32,11 +32,15 @@ public partial class MainWindow : Window
     private DispatcherTimer? _statusTimer;
     private DirectionalTestPlayer? _testTonePlayer;
     private bool _isStartingAudio;
+    private bool _isRecoveringAudio;
+    private int _recoveryAttempts;
+    private DateTime _recoveryWindowStart = DateTime.UtcNow;
     private string _selectedDeviceId = string.Empty;
     private string _selectedDeviceName = string.Empty;
     private string _selectedCaptureDeviceId = string.Empty;
     private WaveFormat? _requestedOutputFormat;
     private string? _previousDefaultDeviceId;
+    private string? _managedCaptureDeviceId;
     private bool _defaultDeviceManagedByApp;
     private int _bufferMilliseconds = 100;
     private float _volumeLevel = 1.0f;
@@ -475,6 +479,12 @@ public partial class MainWindow : Window
         BtnStartStop.IsEnabled = false;
         SetStatus("正在打开音频设备…", StatusKind.Pending);
 
+        if (!_isRecoveringAudio)
+        {
+            _recoveryAttempts = 0;
+            _recoveryWindowStart = DateTime.UtcNow;
+        }
+
         RealTimeAudioProcessor? processor = null;
 
         try
@@ -491,8 +501,10 @@ public partial class MainWindow : Window
                 device,
                 ResolveCaptureDeviceId(),
                 _requestedOutputFormat,
-                preferExclusiveOutput: true);
+                preferExclusiveOutput: true,
+                bufferMilliseconds: _bufferMilliseconds);
             processor.ProcessingError += OnProcessingError;
+            processor.PipelineStopped += OnPipelineStopped;
 
             var target = processor;
 
@@ -524,9 +536,11 @@ public partial class MainWindow : Window
 
             StartStatusTimer();
             UpdatePerformanceText();
+            Log($"音频启动：捕获={target.CaptureDeviceName}，输出={target.OutputDeviceName}，格式={target.OutputFormat}");
         }
         catch (Exception ex)
         {
+            Log($"音频启动失败：{ex}");
             processor?.Dispose();
 
             BtnStartStop.Content = "▶  启动音频";
@@ -553,6 +567,7 @@ public partial class MainWindow : Window
         if (processor != null)
         {
             processor.ProcessingError -= OnProcessingError;
+            processor.PipelineStopped -= OnPipelineStopped;
 
             try { processor.Stop(); }
             catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"停止音频失败: {ex.Message}"); }
@@ -591,6 +606,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrEmpty(captureId) || !WindowsAudioEndpoint.IsVirtualCable(captureId))
             return;
 
+        _managedCaptureDeviceId = captureId;
         _previousDefaultDeviceId ??= WindowsAudioEndpoint.GetDefaultRenderDeviceId();
 
         if (WindowsAudioEndpoint.TrySetDefaultDevice(captureId, out _))
@@ -611,8 +627,40 @@ public partial class MainWindow : Window
         if (target != null && WindowsAudioEndpoint.IsVirtualCable(target))
             target = GetSelectedOutputDeviceId();
 
-        if (!string.IsNullOrEmpty(target))
-            WindowsAudioEndpoint.TrySetDefaultDevice(target, out _);
+        if (string.IsNullOrEmpty(target))
+            return;
+
+        WindowsAudioEndpoint.TrySetDefaultDevice(target, out _);
+    }
+
+    private void EnsureManagedDefaultDevice()
+    {
+        if (ChkSetDefaultDevice.IsChecked != true || _audioProcessor == null)
+            return;
+
+        string? captureId = _managedCaptureDeviceId;
+        if (string.IsNullOrEmpty(captureId))
+        {
+            captureId = WindowsAudioEndpoint.FindRenderDeviceId("CABLE In 16ch")
+                     ?? WindowsAudioEndpoint.FindRenderDeviceId("CABLE Input");
+            _managedCaptureDeviceId = captureId;
+        }
+
+        if (string.IsNullOrEmpty(captureId) || !WindowsAudioEndpoint.IsVirtualCable(captureId))
+            return;
+
+        string? current = WindowsAudioEndpoint.GetDefaultRenderDeviceId();
+        if (string.IsNullOrEmpty(current) ||
+            string.Equals(current, captureId, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (WindowsAudioEndpoint.TrySetDefaultDevice(captureId, out _))
+        {
+            _defaultDeviceManagedByApp = true;
+            Log($"默认播放设备被改走（{current}），已重新切换到 {captureId}");
+        }
     }
 
     /// <summary>
@@ -651,18 +699,91 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 处理器运行期错误：停止音频并把原因显示在状态栏（不弹模态框）
+    /// 处理器运行期错误：优先自动重建链路，连续失败才停止。
     /// </summary>
     private void OnProcessingError(object? sender, ProcessingErrorEventArgs e)
     {
         Dispatcher.BeginInvoke(new Action(() =>
         {
-            if (_audioProcessor == null)
+            _ = RecoverAudioAsync(e.Exception, "音频处理异常");
+        }));
+    }
+
+    private void OnPipelineStopped(object? sender, PipelineStoppedEventArgs e)
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            _ = RecoverAudioAsync(e.Exception, e.Reason);
+        }));
+    }
+
+    private async Task RecoverAudioAsync(Exception? exception, string reason)
+    {
+        if (_audioProcessor == null || _isStartingAudio || _isRecoveringAudio)
+            return;
+
+        _isRecoveringAudio = true;
+
+        try
+        {
+            var now = DateTime.UtcNow;
+
+            if ((now - _recoveryWindowStart).TotalSeconds > 60)
+            {
+                _recoveryAttempts = 0;
+                _recoveryWindowStart = now;
+            }
+
+            _recoveryAttempts++;
+            Log($"音频中断：{reason}，尝试自动恢复 #{_recoveryAttempts}。{exception}");
+
+            if (_recoveryAttempts > 3)
+            {
+                StopAudio();
+                SetStatus($"音频多次中断（{reason}），已停止。请检查设备和驱动后重新启动。",
+                    StatusKind.Error, exception?.ToString());
                 return;
+            }
+
+            SetStatus($"音频中断（{reason}），正在自动恢复…", StatusKind.Pending, exception?.ToString());
 
             StopAudio();
-            SetStatus($"音频已停止：{e.Exception.Message}", StatusKind.Error, e.Exception.ToString());
-        }));
+            await Task.Delay(700);
+
+            if (_audioProcessor == null)
+                await StartAudioAsync();
+
+            if (_audioProcessor == null)
+                SetStatus($"自动恢复失败（{reason}）", StatusKind.Error, exception?.ToString());
+        }
+        finally
+        {
+            _isRecoveringAudio = false;
+        }
+    }
+
+    private static void Log(string message)
+    {
+        try
+        {
+            var directory = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "StepAudioDriver");
+
+            System.IO.Directory.CreateDirectory(directory);
+
+            var path = System.IO.Path.Combine(directory, "step.log");
+            var file = new System.IO.FileInfo(path);
+
+            if (file.Exists && file.Length > 2 * 1024 * 1024)
+                System.IO.File.WriteAllText(path, string.Empty);
+
+            System.IO.File.AppendAllText(path, $"{DateTime.Now:O} {message}{Environment.NewLine}");
+        }
+        catch
+        {
+            // 日志失败不影响音频
+        }
     }
 
     /// <summary>
@@ -711,6 +832,15 @@ public partial class MainWindow : Window
             PerfText.Text = string.Empty;
             return;
         }
+
+        if ((DateTime.UtcNow - _recoveryWindowStart).TotalSeconds > 60)
+            _recoveryAttempts = 0;
+
+        // 端点停止事件偶尔会丢，这里再做一层兜底
+        if (processor.IsRunning && !processor.IsCaptureActive && !_isRecoveringAudio)
+            _ = RecoverAudioAsync(null, "捕获端点停止");
+
+        EnsureManagedDefaultDevice();
 
         try
         {
@@ -2780,6 +2910,7 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        Log("应用关闭");
         try { UiSettingsStore.Save(CaptureUiSettings()); }
         catch { /* 忽略 */ }
 

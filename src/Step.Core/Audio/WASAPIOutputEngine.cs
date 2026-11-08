@@ -29,6 +29,11 @@ public class WASAPIOutputEngine : IDisposable
     /// </summary>
     public event EventHandler<Exception>? OutputError;
 
+    /// <summary>
+    /// 输出播放停止（设备被拔出、驱动重置、被其它程序抢占等）
+    /// </summary>
+    public event EventHandler<Exception?>? PlaybackStopped;
+
     public WASAPIOutputEngine(AudioDevice device)
     {
         _device = device;
@@ -121,6 +126,7 @@ public class WASAPIOutputEngine : IDisposable
 
                 wasapiOut = new WasapiOut(_outputDevice!, shareMode, false, latencyMs);
                 wasapiOut.Init(provider);
+                wasapiOut.PlaybackStopped += OnPlaybackStopped;
 
                 _wasapiOut = wasapiOut;
                 _waveProvider = provider;
@@ -236,6 +242,12 @@ public class WASAPIOutputEngine : IDisposable
         return friendlyName.Contains("CABLE", StringComparison.OrdinalIgnoreCase) ||
                friendlyName.Contains("VB-Audio", StringComparison.OrdinalIgnoreCase) ||
                friendlyName.Contains("VB-CABLE", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void OnPlaybackStopped(object? sender, StoppedEventArgs e)
+    {
+        _isPlaying = false;
+        PlaybackStopped?.Invoke(this, e.Exception);
     }
 
     /// <summary>
@@ -375,6 +387,9 @@ public class WASAPIOutputEngine : IDisposable
         _disposed = true;
 
         Stop();
+
+        if (_wasapiOut != null)
+            _wasapiOut.PlaybackStopped -= OnPlaybackStopped;
 
         try { _wasapiOut?.Dispose(); }
         catch { /* ignore */ }
