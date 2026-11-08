@@ -1,5 +1,9 @@
 # SK02 Control Center
 
+[![Release](https://img.shields.io/github/v/release/cgxgeyw/SK02AudioDriver?display_name=tag)](https://github.com/cgxgeyw/SK02AudioDriver/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20x64-0078D6)](https://github.com/cgxgeyw/SK02AudioDriver)
+
 面向 FPS 游戏与日常听歌的 Windows 虚拟 7.1 音频控制中心。为 **Fosi Audio SK02** 优化，也支持其它 WASAPI 输出设备。
 
 ![SK02 Control Center](docs/images/presets-redesign.png)
