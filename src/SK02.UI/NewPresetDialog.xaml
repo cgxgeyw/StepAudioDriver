@@ -1,0 +1,206 @@
+<Window x:Class="SK02.UI.NewPresetDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="新建预设" Width="460" Height="380"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Microsoft YaHei UI" FontSize="13"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+
+  <Window.Resources>
+    <Style x:Key="DialogTextBox" TargetType="TextBox">
+      <Setter Property="Background" Value="#171A1E"/>
+      <Setter Property="Foreground" Value="#ECEEF1"/>
+      <Setter Property="CaretBrush" Value="#E8A33D"/>
+      <Setter Property="BorderBrush" Value="#353C45"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="10,7"/>
+      <Setter Property="FontSize" Value="12.5"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TextBox">
+            <Border Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="8">
+              <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+      <Style.Triggers>
+        <Trigger Property="IsKeyboardFocused" Value="True">
+          <Setter Property="BorderBrush" Value="#E8A33D"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+
+    <Style x:Key="DialogGhostButton" TargetType="Button">
+      <Setter Property="Width" Value="88"/>
+      <Setter Property="Height" Value="34"/>
+      <Setter Property="Foreground" Value="#ECEEF1"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="#353C45"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="8">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#20242A"/>
+                <Setter TargetName="bd" Property="BorderBrush" Value="#4A525D"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#2A3037"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="DialogPrimaryButton" TargetType="Button">
+      <Setter Property="Width" Value="88"/>
+      <Setter Property="Height" Value="34"/>
+      <Setter Property="Foreground" Value="#0B0C0E"/>
+      <Setter Property="Background" Value="#E8A33D"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="8">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#F4B45C"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#D08E2E"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="bd" Property="Background" Value="#2A3037"/>
+                <Setter Property="Foreground" Value="#6E767F"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="DialogCloseButton" TargetType="Button">
+      <Setter Property="Width" Value="36"/>
+      <Setter Property="Height" Value="32"/>
+      <Setter Property="Foreground" Value="#A3AAB4"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+      <Setter Property="FontSize" Value="10"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="8">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#C42B1C"/>
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+
+  <Border Margin="12" Background="#101215" BorderBrush="#3A424C"
+          BorderThickness="2" CornerRadius="14">
+    <Border.Effect>
+      <DropShadowEffect BlurRadius="28" ShadowDepth="6" Opacity="0.55" Color="Black"/>
+    </Border.Effect>
+
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="44"/>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="64"/>
+      </Grid.RowDefinitions>
+
+      <!-- 自绘标题栏 -->
+      <Border Grid.Row="0" Background="Transparent"
+              MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+        <Grid Margin="20,0,12,0">
+          <TextBlock Text="新建预设" FontSize="14" FontWeight="SemiBold"
+                     Foreground="#ECEEF1" VerticalAlignment="Center"/>
+          <Button Style="{StaticResource DialogCloseButton}" Content="&#xE8BB;"
+                  HorizontalAlignment="Right" VerticalAlignment="Center"
+                  Click="BtnCancel_Click"/>
+        </Grid>
+      </Border>
+
+      <StackPanel Grid.Row="1" Margin="20,4,20,0">
+        <TextBlock Text="预设名称" FontSize="12.5" Foreground="#A3AAB4"
+                   Margin="0,0,0,6"/>
+        <Border Background="#171A1E" BorderThickness="1" CornerRadius="8" Height="36">
+          <Border.Style>
+            <Style TargetType="Border">
+              <Setter Property="BorderBrush" Value="#353C45"/>
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding IsKeyboardFocused, ElementName=NameBox}" Value="True">
+                  <Setter Property="BorderBrush" Value="#E8A33D"/>
+                </DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </Border.Style>
+          <TextBox x:Name="NameBox" Background="Transparent" BorderThickness="0"
+                   Foreground="#ECEEF1" CaretBrush="#E8A33D" FontSize="13.5"
+                   Padding="10,0" VerticalContentAlignment="Center"
+                   MaxLength="40" TextChanged="NameBox_TextChanged"/>
+        </Border>
+
+        <TextBlock Text="描述" FontSize="12.5" Foreground="#A3AAB4"
+                   Margin="0,16,0,6"/>
+        <Border Background="#171A1E" BorderThickness="1" CornerRadius="8" Height="76">
+          <Border.Style>
+            <Style TargetType="Border">
+              <Setter Property="BorderBrush" Value="#353C45"/>
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding IsKeyboardFocused, ElementName=DescBox}" Value="True">
+                  <Setter Property="BorderBrush" Value="#E8A33D"/>
+                </DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </Border.Style>
+          <TextBox x:Name="DescBox" Background="Transparent" BorderThickness="0"
+                   Foreground="#ECEEF1" CaretBrush="#E8A33D" FontSize="13.5"
+                   Padding="8,6" MaxLength="120" AcceptsReturn="True"
+                   TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+        </Border>
+      </StackPanel>
+
+      <Grid Grid.Row="2" Margin="20,0,20,14">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom">
+          <Button Style="{StaticResource DialogGhostButton}" Content="取消"
+                  Margin="0,0,8,0" Click="BtnCancel_Click"/>
+          <Button x:Name="BtnCreate" Style="{StaticResource DialogPrimaryButton}"
+                  Content="创建" Click="BtnCreate_Click"/>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Border>
+</Window>

@@ -1,0 +1,91 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# Rider
+.idea/
+*.sln.iml
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Local History for Visual Studio
+.localhistory/
+
+# BeatPulse healthcheck temp database
+healthchecksdb
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# Packages
+packages/
+.packages/
+
+# ReSharper is a .NET coding add-in
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# VS Code extensions
+.vscode/extensions
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Test Results
+TestResults/
+*.trx
+
+# Coverage
+coverage/
+*.coverage
+
+# Application files
+*.log
+*.db
+*.sqlite
+config.local.json
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Installer/publish output
+artifacts/
+
+# Rust build output
+target/

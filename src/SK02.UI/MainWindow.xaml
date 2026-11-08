@@ -1,0 +1,816 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="SK02.UI.MainWindow"
+        Title="SK02 Control Center" Height="840" Width="1280"
+        MinHeight="760" MinWidth="1080"
+        Background="#0B0C0E" WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="CanResize" Icon="Assets/sk02.ico"
+        FontFamily="Microsoft YaHei UI" FontSize="13"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True"
+        SnapsToDevicePixels="True" StateChanged="Window_StateChanged">
+
+  <WindowChrome.WindowChrome>
+    <WindowChrome CaptionHeight="0" ResizeBorderThickness="6"
+                  GlassFrameThickness="0" CornerRadius="0"
+                  UseAeroCaptionButtons="False"/>
+  </WindowChrome.WindowChrome>
+
+  <Window.Resources>
+    <!-- ── Palette: warm neutral + amber ─────────────────── -->
+    <SolidColorBrush x:Key="BrBase"         Color="#0B0C0E"/>
+    <SolidColorBrush x:Key="BrSurface"      Color="#101215"/>
+    <SolidColorBrush x:Key="BrElevated"     Color="#171A1E"/>
+    <SolidColorBrush x:Key="BrHover"        Color="#20242A"/>
+    <SolidColorBrush x:Key="BrBorder"       Color="#262B32"/>
+    <SolidColorBrush x:Key="BrBorderStrong" Color="#353C45"/>
+    <SolidColorBrush x:Key="BrTrack"        Color="#2A3037"/>
+    <SolidColorBrush x:Key="BrAccent"       Color="#E8A33D"/>
+    <SolidColorBrush x:Key="BrAccentHover"  Color="#F4B45C"/>
+    <SolidColorBrush x:Key="BrAccentDim"    Color="#2E2211"/>
+    <SolidColorBrush x:Key="BrText1"        Color="#ECEEF1"/>
+    <SolidColorBrush x:Key="BrText2"        Color="#A3AAB4"/>
+    <SolidColorBrush x:Key="BrText3"        Color="#6E767F"/>
+    <SolidColorBrush x:Key="BrGood"         Color="#4CC38A"/>
+    <SolidColorBrush x:Key="BrWarn"         Color="#E0B341"/>
+    <SolidColorBrush x:Key="BrError"        Color="#E5534B"/>
+
+    <!-- ── ToolTip ───────────────────────────────────────── -->
+    <Style TargetType="ToolTip">
+      <Setter Property="Foreground" Value="{StaticResource BrText1}"/>
+      <Setter Property="Background" Value="{StaticResource BrElevated}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BrBorderStrong}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="10,6"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ToolTip">
+            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
+              <ContentPresenter/>
+            </Border>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- ── Buttons ───────────────────────────────────────── -->
+    <Style x:Key="PrimaryButton" TargetType="Button">
+      <Setter Property="Foreground" Value="#171104"/>
+      <Setter Property="Background" Value="{StaticResource BrAccent}"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Padding" Value="16,0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6"
+                    BorderBrush="Transparent" BorderThickness="1" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrAccentHover}"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Opacity" Value="0.82"/>
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrText1}"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="bd" Property="Opacity" Value="0.45"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="GhostButton" TargetType="Button">
+      <Setter Property="Foreground" Value="{StaticResource BrText1}"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Padding" Value="14,0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="6"
+                    BorderBrush="{StaticResource BrBorderStrong}" BorderThickness="1" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrHover}"/>
+                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrText3}"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Opacity" Value="0.8"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="bd" Property="Opacity" Value="0.35"/>
+                <Setter Property="Cursor" Value="Arrow"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+      <Setter Property="FontSize" Value="16"/>
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+
+    <!-- ── TextBox ───────────────────────────────────────── -->
+    <Style TargetType="TextBox">
+      <Setter Property="Foreground" Value="{StaticResource BrText1}"/>
+      <Setter Property="Background" Value="{StaticResource BrElevated}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource BrBorder}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CaretBrush" Value="{StaticResource BrAccent}"/>
+      <Setter Property="SelectionBrush" Value="{StaticResource BrAccent}"/>
+      <Setter Property="Padding" Value="8,0"/>
+      <Setter Property="Height" Value="30"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TextBox">
+            <Border x:Name="bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="1" CornerRadius="5">
+              <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                            VerticalAlignment="Center" Focusable="False"
+                            HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrBorderStrong}"/>
+              </Trigger>
+              <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrAccent}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="NumericBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+      <Setter Property="FontFamily" Value="Microsoft YaHei UI"/>
+      <Setter Property="TextAlignment" Value="Center"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Padding" Value="6,0"/>
+    </Style>
+
+    <!-- ── Slider thumbs & tracks ────────────────────────── -->
+    <Style x:Key="SliderThumb" TargetType="Thumb">
+      <Setter Property="Width" Value="14"/>
+      <Setter Property="Height" Value="14"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Thumb">
+            <Border x:Name="bd" Background="{StaticResource BrAccent}" CornerRadius="7"
+                    BorderBrush="{StaticResource BrBase}" BorderThickness="2"/>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrAccentHover}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="InvisibleRepeat" TargetType="RepeatButton">
+      <Setter Property="Focusable" Value="False"/>
+      <Setter Property="IsTabStop" Value="False"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="RepeatButton">
+            <Border Background="Transparent"/>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="VSlider" TargetType="Slider">
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Slider">
+            <Grid Background="Transparent">
+              <Border Width="4" Background="{StaticResource BrTrack}" CornerRadius="2"
+                      HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
+              <Track x:Name="PART_Track" Orientation="Vertical" Margin="0,7">
+                <Track.DecreaseRepeatButton>
+                  <RepeatButton Style="{StaticResource InvisibleRepeat}" Command="Slider.DecreaseLarge"/>
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                  <Thumb Style="{StaticResource SliderThumb}"/>
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                  <RepeatButton Style="{StaticResource InvisibleRepeat}" Command="Slider.IncreaseLarge"/>
+                </Track.IncreaseRepeatButton>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="HSlider" TargetType="Slider">
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Slider">
+            <Grid Background="Transparent" Height="20">
+              <Border Height="4" Background="{StaticResource BrTrack}" CornerRadius="2"
+                      VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+              <Track x:Name="PART_Track" Orientation="Horizontal" Margin="7,0">
+                <Track.DecreaseRepeatButton>
+                  <RepeatButton Style="{StaticResource InvisibleRepeat}" Command="Slider.DecreaseLarge"/>
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                  <Thumb Style="{StaticResource SliderThumb}"/>
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                  <RepeatButton Style="{StaticResource InvisibleRepeat}" Command="Slider.IncreaseLarge"/>
+                </Track.IncreaseRepeatButton>
+              </Track>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- ── CheckBox ──────────────────────────────────────── -->
+    <Style TargetType="CheckBox">
+      <Setter Property="Foreground" Value="{StaticResource BrText1}"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="CheckBox">
+            <StackPanel Orientation="Horizontal" Background="Transparent">
+              <Border x:Name="box" Width="18" Height="18" CornerRadius="4"
+                      Background="{StaticResource BrElevated}"
+                      BorderBrush="{StaticResource BrBorderStrong}" BorderThickness="1"
+                      VerticalAlignment="Center">
+                <Path x:Name="check" Data="M 4 9 L 7.5 12.5 L 14 5.5"
+                      Stroke="#171104" StrokeThickness="2" StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round" Visibility="Collapsed"/>
+              </Border>
+              <ContentPresenter Margin="10,0,0,0" VerticalAlignment="Center"/>
+            </StackPanel>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="box" Property="Background" Value="{StaticResource BrAccent}"/>
+                <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource BrAccent}"/>
+                <Setter TargetName="check" Property="Visibility" Value="Visible"/>
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="box" Property="BorderBrush" Value="{StaticResource BrAccent}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- ── ComboBox ──────────────────────────────────────── -->
+    <Style TargetType="ComboBoxItem">
+      <Setter Property="Foreground" Value="{StaticResource BrText1}"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBoxItem">
+            <Border x:Name="bd" Background="Transparent" CornerRadius="4" Padding="12,8" Margin="4,2">
+              <ContentPresenter/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrHover}"/>
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrAccentDim}"/>
+                <Setter Property="Foreground" Value="{StaticResource BrAccent}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="ComboBox">
+      <Setter Property="Foreground" Value="{StaticResource BrText1}"/>
+      <Setter Property="Background" Value="{StaticResource BrElevated}"/>
+      <Setter Property="Height" Value="36"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBox">
+            <Grid>
+              <ToggleButton x:Name="ToggleButton" Focusable="False" ClickMode="Press"
+                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                <ToggleButton.Template>
+                  <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="bd" Background="{StaticResource BrElevated}"
+                            BorderBrush="{StaticResource BrBorder}" BorderThickness="1" CornerRadius="6">
+                      <Path Data="M 0 0 L 5 5 L 10 0" Stroke="{StaticResource BrText2}" StrokeThickness="1.5"
+                            HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,14,0"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                      <Trigger Property="IsMouseOver" Value="True">
+                        <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrBorderStrong}"/>
+                      </Trigger>
+                      <Trigger Property="IsChecked" Value="True">
+                        <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource BrAccent}"/>
+                      </Trigger>
+                    </ControlTemplate.Triggers>
+                  </ControlTemplate>
+                </ToggleButton.Template>
+              </ToggleButton>
+
+              <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False"
+                                Content="{TemplateBinding SelectionBoxItem}"
+                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                Margin="12,0,34,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+
+              <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
+                     AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                <Border Background="{StaticResource BrElevated}" BorderBrush="{StaticResource BrBorderStrong}"
+                        BorderThickness="1" CornerRadius="6" Margin="0,4,0,0"
+                        MinWidth="{TemplateBinding ActualWidth}" MaxHeight="300">
+                  <ScrollViewer VerticalScrollBarVisibility="Hidden">
+                    <ItemsPresenter/>
+                  </ScrollViewer>
+                </Border>
+              </Popup>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- ── Tabs ──────────────────────────────────────────── -->
+    <Style TargetType="TabControl">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TabControl">
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+              </Grid.RowDefinitions>
+              <Border Background="{StaticResource BrSurface}" BorderBrush="{StaticResource BrBorder}"
+                      BorderThickness="0,0,0,1" Padding="16,0">
+                <TabPanel IsItemsHost="True"/>
+              </Border>
+              <ContentPresenter Grid.Row="1" ContentSource="SelectedContent"/>
+            </Grid>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style TargetType="TabItem">
+      <Setter Property="Foreground" Value="{StaticResource BrText3}"/>
+      <Setter Property="FontSize" Value="12.5"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TabItem">
+            <Grid Background="Transparent">
+              <Border x:Name="bd" Background="Transparent" Padding="14,15,14,13">
+                <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <Border x:Name="underline" Height="2" Background="{StaticResource BrAccent}"
+                      VerticalAlignment="Bottom" Visibility="Collapsed" CornerRadius="1"/>
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource BrText1}"/>
+                <Setter TargetName="underline" Property="Visibility" Value="Visible"/>
+              </Trigger>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{StaticResource BrText2}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="CaptionButton" TargetType="Button">
+      <Setter Property="Width" Value="46"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{StaticResource BrText2}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrHover}"/>
+                <Setter Property="Foreground" Value="{StaticResource BrText1}"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{StaticResource BrBorder}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="CaptionCloseButton" TargetType="Button">
+      <Setter Property="Width" Value="46"/>
+      <Setter Property="Height" Value="38"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{StaticResource BrText2}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#C42B1C"/>
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#A1261A"/>
+                <Setter Property="Foreground" Value="White"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+  </Window.Resources>
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="38"/>
+      <RowDefinition Height="56"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- ── 自绘标题栏 ─────────────────────────────────────── -->
+    <Border Grid.Row="0" Background="{StaticResource BrBase}"
+            BorderBrush="{StaticResource BrBorder}" BorderThickness="0,0,0,1"
+            MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+      <Grid>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+          <Image Source="Assets/sk02.ico" Width="18" Height="18"
+                 RenderOptions.BitmapScalingMode="HighQuality"/>
+          <TextBlock Text="SK02 Control Center" FontSize="12.5"
+                     Foreground="{StaticResource BrText2}" VerticalAlignment="Center"
+                     Margin="9,0,0,0"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+          <Button x:Name="BtnMinimize" Style="{StaticResource CaptionButton}"
+                  Click="BtnMinimize_Click">
+            <Path Data="M 0,6 L 12,6"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                  StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+          </Button>
+          <Button x:Name="BtnMaximize" Style="{StaticResource CaptionButton}"
+                  Click="BtnMaximize_Click">
+            <Path x:Name="MaximizeGlyph" Data="M 0.5,0.5 L 11.5,0.5 L 11.5,11.5 L 0.5,11.5 Z"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                  StrokeThickness="2" StrokeLineJoin="Round"/>
+          </Button>
+          <Button x:Name="BtnClose" Style="{StaticResource CaptionCloseButton}"
+                  Click="BtnClose_Click">
+            <Path Data="M 0,0 L 12,12 M 12,0 L 0,12"
+                  Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                  StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ── Header ────────────────────────────────────────── -->
+    <Border Grid.Row="1" Background="{StaticResource BrSurface}"
+            BorderBrush="{StaticResource BrBorder}" BorderThickness="0,0,0,1" Padding="24,0">
+      <Grid>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock Text="SK02" FontSize="16" FontWeight="Bold"
+                     Foreground="{StaticResource BrAccent}" VerticalAlignment="Center"/>
+          <Border Width="1" Height="14" Background="{StaticResource BrBorder}" Margin="14,0"/>
+          <TextBlock Text="Control Center" FontSize="13" Foreground="{StaticResource BrText2}"
+                     VerticalAlignment="Center"/>
+          <Border Background="{StaticResource BrElevated}" BorderBrush="{StaticResource BrBorder}"
+                  BorderThickness="1" CornerRadius="14" Padding="11,4" Margin="22,0,0,0"
+                  VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal">
+              <Ellipse Name="StatusDot" Width="7" Height="7" Fill="{StaticResource BrText3}"
+                       VerticalAlignment="Center" Margin="0,0,7,0"/>
+              <TextBlock Name="StatusText" Text="音频未启动" FontSize="12"
+                         Foreground="{StaticResource BrText2}" VerticalAlignment="Center"/>
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <TextBlock Name="PerfText" FontFamily="Microsoft YaHei UI" FontSize="12"
+                     Foreground="{StaticResource BrText3}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+          <Button Name="BtnStartStop" Style="{StaticResource PrimaryButton}" Content="▶  启动音频"
+                  Width="128" Height="34" Click="BtnStartStop_Click"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ── Tabs ──────────────────────────────────────────── -->
+    <TabControl Grid.Row="2" x:Name="MainTabs">
+      <!-- ══════════ 均衡器 ══════════ -->
+      <TabItem Header="均衡器">
+        <Grid PreviewMouseWheel="EqTab_PreviewMouseWheel">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="252"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+
+          <!-- 预设栏 -->
+          <Border Grid.Column="0" Background="{StaticResource BrSurface}"
+                  BorderBrush="{StaticResource BrBorder}" BorderThickness="0,0,1,0">
+            <Grid Margin="16,20,16,16">
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+              </Grid.RowDefinitions>
+
+              <Grid Grid.Row="0" Margin="0,0,0,14">
+                <TextBlock Text="预设" FontSize="13" FontWeight="SemiBold"
+                           Foreground="{StaticResource BrText2}" VerticalAlignment="Center"/>
+                <Button Name="BtnAddPreset" Style="{StaticResource IconButton}" Content="+"
+                        Width="28" Height="28" HorizontalAlignment="Right" Click="BtnAddPreset_Click"
+                        ToolTip="新建预设"/>
+              </Grid>
+
+              <ScrollViewer x:Name="PresetScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Hidden">
+                <StackPanel Name="PresetCardsPanel"/>
+              </ScrollViewer>
+            </Grid>
+          </Border>
+
+          <!-- 编辑器 -->
+          <Grid Grid.Column="1" Margin="28,14,28,10">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="*"/>
+              <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="0,0,0,16">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="均衡器" FontSize="19" FontWeight="SemiBold"
+                           Foreground="{StaticResource BrText1}" VerticalAlignment="Center"/>
+                <TextBlock Name="PresetNameText" Text="图形均衡器" FontSize="13"
+                           Foreground="{StaticResource BrText3}" Margin="12,0,0,0"
+                           VerticalAlignment="Center"/>
+                <TextBlock Name="LockHint" Text="内置预设只读 · 切换到「自定义」后可调整"
+                           FontSize="11.5" Foreground="{StaticResource BrText3}"
+                           Margin="14,0,0,0" VerticalAlignment="Center"
+                           Visibility="Collapsed"/>
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Name="BtnResetEQ" Style="{StaticResource GhostButton}" Content="重置"
+                        Width="84" Height="32" Click="BtnResetEQ_Click"/>
+                <Button Name="BtnSaveEQ" Style="{StaticResource GhostButton}" Content="保存到预设"
+                        Width="116" Height="32" Margin="8,0,0,0" Click="BtnSaveEQ_Click"/>
+              </StackPanel>
+            </Grid>
+
+            <Border Grid.Row="1" Background="{StaticResource BrSurface}"
+                    BorderBrush="{StaticResource BrBorder}" BorderThickness="1" CornerRadius="10"
+                    Padding="8">
+              <Canvas Name="EQCurveCanvas" ClipToBounds="True" Cursor="Cross" Background="Transparent"
+                      MouseLeftButtonDown="EQCurve_MouseDown"
+                      MouseMove="EQCurve_MouseMove"
+                      MouseLeftButtonUp="EQCurve_MouseUp"
+                      MouseLeave="EQCurve_MouseLeave"/>
+            </Border>
+
+            <!-- 频段控制条（10 列在代码里生成，保证上下对齐） -->
+            <StackPanel Grid.Row="2" Margin="0,10,0,0">
+              <Grid Margin="0,0,0,4">
+                <TextBlock Name="CurveHint" Text="拖动曲线控制点同时调整频率与增益，双击单段复位"
+                           FontSize="11.5" Foreground="{StaticResource BrText3}"/>
+                <TextBlock Text="频率 Hz   ·   增益 dB   ·   Q" HorizontalAlignment="Right"
+                           FontSize="11.5" Foreground="{StaticResource BrText3}"/>
+              </Grid>
+              <Grid Name="BandStrip"/>
+            </StackPanel>
+          </Grid>
+        </Grid>
+      </TabItem>
+
+      <!-- ══════════ 7.1 环绕声 ══════════ -->
+      <TabItem Header="7.1 环绕声">
+        <Grid Margin="28,22,28,24">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="360"/>
+          </Grid.ColumnDefinitions>
+
+          <Border Grid.Column="0" Background="{StaticResource BrSurface}"
+                  BorderBrush="{StaticResource BrBorder}" BorderThickness="1" CornerRadius="10">
+            <Canvas Name="SpeakerDiagramCanvas" Background="Transparent"
+                    SizeChanged="SpeakerCanvas_SizeChanged"
+                    MouseLeftButtonDown="SpeakerCanvas_MouseDown"/>
+          </Border>
+
+          <StackPanel Grid.Column="1" Margin="24,2,0,0">
+            <TextBlock Text="虚拟环绕" FontSize="19" FontWeight="SemiBold"
+                       Foreground="{StaticResource BrText1}"/>
+
+            <CheckBox Name="ChkHrtf" Content="启用虚拟环绕" IsChecked="True"
+                      Checked="ChkHrtf_Changed" Unchecked="ChkHrtf_Changed"/>
+
+            <Border Height="1" Background="{StaticResource BrBorder}" Margin="0,18"/>
+
+            <Grid>
+              <TextBlock Text="HRTF 强度" FontSize="13.5" Foreground="{StaticResource BrText1}"/>
+              <TextBlock Name="LabelHRTF" Text="1.2x" FontFamily="Microsoft YaHei UI" FontSize="13"
+                         Foreground="{StaticResource BrAccent}" HorizontalAlignment="Right"/>
+            </Grid>
+            <Slider Name="SliderHRTF" Style="{StaticResource HSlider}" Minimum="0.5" Maximum="2.0"
+                    Value="1.2" Margin="0,8,0,0" ValueChanged="SliderHRTF_Changed"/>
+
+            <Border Height="1" Background="{StaticResource BrBorder}" Margin="0,18"/>
+
+            <Grid>
+              <TextBlock Text="环绕声宽度" FontSize="13.5" Foreground="{StaticResource BrText1}"/>
+              <TextBlock Name="LabelSurround" Text="120°" FontFamily="Microsoft YaHei UI" FontSize="13"
+                         Foreground="{StaticResource BrAccent}" HorizontalAlignment="Right"/>
+            </Grid>
+            <Slider Name="SliderSurround" Style="{StaticResource HSlider}" Minimum="60" Maximum="180"
+                    Value="120" Margin="0,8,0,0" ValueChanged="SliderSurround_Changed"/>
+
+          </StackPanel>
+        </Grid>
+      </TabItem>
+
+      <!-- ══════════ 设置 ══════════ -->
+      <!-- ══════════ 声道电平 ══════════ -->
+      <TabItem Header="声道电平">
+        <Grid Margin="28,24,28,24">
+          <StackPanel Name="ChannelMetersPanel" Width="760" HorizontalAlignment="Left"/>
+        </Grid>
+      </TabItem>
+
+      <TabItem Header="设置">
+        <StackPanel MaxWidth="820" Margin="28,36,28,32" HorizontalAlignment="Left">
+
+            <TextBlock Text="音频路由" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource BrText3}" Margin="0,0,0,12"/>
+
+            <Grid Margin="0,0,0,16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="捕获设备" FontSize="13.5" Foreground="{StaticResource BrText1}"/>
+              </StackPanel>
+              <ComboBox Grid.Column="1" Name="CaptureDeviceComboBox"
+                        SelectionChanged="CaptureDeviceComboBox_SelectionChanged"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel VerticalAlignment="Top" Margin="0,4,0,0">
+                <TextBlock Text="7.1 快速配置" FontSize="13.5" Foreground="{StaticResource BrText1}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <StackPanel Orientation="Horizontal">
+                  <Button Name="BtnGameMode" Style="{StaticResource GhostButton}" Content="游戏模式"
+                          Width="104" Height="32" Click="BtnGameMode_Click"
+                          ToolTip="8 声道 + 游戏预设 + 启动音频"/>
+                  <Button Name="BtnAutoConfig" Style="{StaticResource GhostButton}" Content="一键配置 7.1"
+                          Width="140" Height="32" Margin="8,0,0,0" Click="BtnAutoConfig_Click"/>
+                  <Button Name="BtnRestoreStereo" Style="{StaticResource GhostButton}" Content="恢复 2.0"
+                          Width="90" Height="32" Margin="8,0,0,0" Click="BtnRestoreStereo_Click"/>
+                </StackPanel>
+                <CheckBox Name="ChkSetDefaultDevice" Content="同时设为默认播放设备"
+                          IsChecked="True" Margin="0,10,0,0"/>
+                <TextBlock Name="AutoConfigStatusText" FontSize="11.5"
+                           Foreground="{StaticResource BrText3}" TextWrapping="Wrap"
+                           Margin="0,6,0,0"/>
+              </StackPanel>
+            </Grid>
+
+            <Grid Margin="0,0,0,16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="输出设备" FontSize="13.5" Foreground="{StaticResource BrText1}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <ComboBox Name="DeviceComboBox"
+                          SelectionChanged="DeviceComboBox_SelectionChanged"/>
+                <TextBlock Name="OutputCapabilityText" FontSize="10.5"
+                           Foreground="{StaticResource BrText3}" Margin="2,4,0,0"/>
+              </StackPanel>
+            </Grid>
+
+            <Grid Margin="0,0,0,16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="缓冲档位" FontSize="13.5" Foreground="{StaticResource BrText1}"
+                         VerticalAlignment="Center"/>
+              <StackPanel Grid.Column="1">
+                <ComboBox Name="BufferModeComboBox"
+                          SelectionChanged="BufferModeComboBox_SelectionChanged"/>
+                <TextBlock Text="越大越稳定、延迟越高；越小延迟越低，出现爆音/卡顿就调大一档"
+                           FontSize="11.5" Foreground="{StaticResource BrText3}"
+                           Margin="2,4,0,0" TextWrapping="Wrap"/>
+              </StackPanel>
+            </Grid>
+
+            <Grid Margin="0,0,0,24">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="输出格式" FontSize="13.5" Foreground="{StaticResource BrText1}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <ComboBox Name="OutputFormatComboBox"
+                          SelectionChanged="OutputFormatComboBox_SelectionChanged"/>
+                <TextBlock Name="FormatStatusText" Text="未启动" FontFamily="Microsoft YaHei UI"
+                           FontSize="13" Foreground="{StaticResource BrText1}" Margin="0,6,0,0"/>
+                <TextBlock Name="FormatDetailText" Text=""
+                           FontSize="11.5" Foreground="{StaticResource BrText3}" Margin="0,2,0,0"/>
+              </StackPanel>
+            </Grid>
+
+            <Grid Margin="0,0,0,16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="直通模式" FontSize="13" Foreground="{StaticResource BrText1}"
+                         VerticalAlignment="Center"/>
+              <CheckBox Grid.Column="1" Name="ChkDspBypass"
+                        Content="跳过 EQ / HRTF / 限幅（诊断）"
+                        Checked="ChkDspBypass_Changed"
+                        Unchecked="ChkDspBypass_Changed"/>
+            </Grid>
+
+            <Border Height="1" Background="{StaticResource BrBorder}" Margin="0,0,0,20"/>
+
+            <TextBlock Text="状态" FontSize="12" FontWeight="SemiBold"
+                       Foreground="{StaticResource BrText3}" Margin="0,0,0,12"/>
+
+            <Grid Margin="0,0,0,16">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="VB-CABLE" FontSize="13.5" Foreground="{StaticResource BrText1}"
+                         VerticalAlignment="Top" Margin="0,2,0,0"/>
+              <TextBlock Grid.Column="1" Name="VBCableStatusText" TextWrapping="Wrap"
+                         FontSize="12.5" Foreground="{StaticResource BrText2}" LineHeight="18"/>
+            </Grid>
+
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="SK02 硬件" FontSize="13.5" Foreground="{StaticResource BrText1}"
+                         VerticalAlignment="Top" Margin="0,2,0,0"/>
+              <TextBlock Grid.Column="1" Name="DeviceStatusText" TextWrapping="Wrap"
+                         FontSize="12.5" Foreground="{StaticResource BrText2}" LineHeight="18"/>
+            </Grid>
+          </StackPanel>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</Window>
