@@ -644,6 +644,9 @@
             <CheckBox Name="ChkHrtf" Content="启用虚拟环绕" IsChecked="True"
                       Checked="ChkHrtf_Changed" Unchecked="ChkHrtf_Changed"/>
 
+            <CheckBox Name="ChkDirectionOverlay" Content="显示方向悬浮窗" Margin="0,10,0,0"
+                      Checked="ChkDirectionOverlay_Changed" Unchecked="ChkDirectionOverlay_Changed"/>
+
             <Border Height="1" Background="{StaticResource BrBorder}" Margin="0,18"/>
 
             <Grid>

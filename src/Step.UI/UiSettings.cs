@@ -19,6 +19,10 @@ public sealed class UiSettings
     public bool? DspBypass { get; set; }
     public bool? SetDefaultDevice { get; set; }
 
+    public bool? OverlayVisible { get; set; }
+    public double? OverlayLeft { get; set; }
+    public double? OverlayTop { get; set; }
+
     public string? CaptureDeviceId { get; set; }
     public string? OutputDeviceId { get; set; }
     public string? OutputFormatTag { get; set; }

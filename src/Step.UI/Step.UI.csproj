@@ -9,7 +9,7 @@
     <UseWindowsForms>false</UseWindowsForms>
     <AssemblyName>StepAudioDriver</AssemblyName>
     <RootNamespace>Step.UI</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>cgxgeyw</Authors>
     <Product>Step 音频驱动</Product>
     <Description>Virtual 7.1 HRTF audio control center for Fosi Audio SK02 and other WASAPI devices.</Description>

@@ -67,6 +67,7 @@ public partial class MainWindow : Window
     private readonly List<(Grid Row, Border Track, Border Fill, TextBlock Label, TextBlock Db)> _channelMeters = new();
     private readonly float[] _meterLevels = new float[16];
     private DispatcherTimer? _meterTimer;
+    private DirectionOverlayWindow? _directionOverlay;
 
     public MainWindow()
     {
@@ -191,6 +192,66 @@ public partial class MainWindow : Window
     {
         if (_audioProcessor != null)
             _audioProcessor.DspBypass = ChkDspBypass.IsChecked == true;
+    }
+
+    private void ChkDirectionOverlay_Changed(object sender, RoutedEventArgs e)
+    {
+        if (ChkDirectionOverlay.IsChecked == true)
+            ShowDirectionOverlay();
+        else
+            CloseDirectionOverlay();
+    }
+
+    private void ShowDirectionOverlay()
+    {
+        if (_directionOverlay != null)
+        {
+            if (!_directionOverlay.IsVisible)
+                _directionOverlay.Show();
+
+            return;
+        }
+
+        var saved = UiSettingsStore.Load();
+        var work = SystemParameters.WorkArea;
+        double screenLeft = SystemParameters.VirtualScreenLeft;
+        double screenTop = SystemParameters.VirtualScreenTop;
+        double screenRight = screenLeft + SystemParameters.VirtualScreenWidth;
+        double screenBottom = screenTop + SystemParameters.VirtualScreenHeight;
+
+        const double width = 200;
+        const double height = 232;
+
+        double left = saved?.OverlayLeft ?? (work.Right - width - 28);
+        double top = saved?.OverlayTop ?? (work.Bottom - height - 28);
+
+        left = Math.Clamp(left, screenLeft, Math.Max(screenLeft, screenRight - width));
+        top = Math.Clamp(top, screenTop, Math.Max(screenTop, screenBottom - height));
+
+        var overlay = new DirectionOverlayWindow
+        {
+            Left = left,
+            Top = top
+        };
+
+        overlay.Closed += DirectionOverlay_Closed;
+        _directionOverlay = overlay;
+        overlay.Show();
+    }
+
+    private void CloseDirectionOverlay()
+    {
+        var overlay = _directionOverlay;
+        _directionOverlay = null;
+        overlay?.Close();
+    }
+
+    private void DirectionOverlay_Closed(object? sender, EventArgs e)
+    {
+        _directionOverlay = null;
+
+        if (ChkDirectionOverlay != null && ChkDirectionOverlay.IsChecked == true)
+            ChkDirectionOverlay.IsChecked = false;
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -345,6 +406,30 @@ public partial class MainWindow : Window
 
             // HID 枚举在部分机器上会阻塞数秒，放到后台线程
             _ = Task.Run(TryInitializeHID);
+
+            // 仅调试构建：--ui-overlay 用于无需音频的悬浮窗截图/验证
+#if DEBUG
+            if (Environment.GetCommandLineArgs().Any(a => a == "--ui-overlay"))
+                ChkDirectionOverlay.IsChecked = true;
+
+            if (Environment.GetCommandLineArgs().Any(a => a == "--ui-overlay-demo"))
+            {
+                ChkDirectionOverlay.IsChecked = true;
+
+                var demoLevels = new float[8];
+                int[] order = { 0, 1, 2, 4, 5, 6, 7 };
+                int demoIndex = 0;
+                var demoTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+                demoTimer.Tick += (_, _) =>
+                {
+                    Array.Clear(demoLevels);
+                    demoLevels[order[demoIndex % order.Length]] = 0.3f;
+                    demoIndex++;
+                    _directionOverlay?.UpdateLevels(demoLevels, 8);
+                };
+                demoTimer.Start();
+            }
+#endif
 
             // 布局完成后再画一次，修正初始尺寸
             _ = Dispatcher.BeginInvoke(new Action(() => DrawEQCurve()), DispatcherPriority.Loaded);
@@ -760,6 +845,7 @@ public partial class MainWindow : Window
     private void StopMeterTimer()
     {
         _meterTimer?.Stop();
+        _directionOverlay?.Clear();
 
         foreach (var meter in _channelMeters)
         {
@@ -780,6 +866,7 @@ public partial class MainWindow : Window
 
         processor.CopyChannelLevels(_meterLevels);
         int channels = processor.CaptureChannelCount;
+        _directionOverlay?.UpdateLevels(_meterLevels, channels);
         var labels = GetChannelLabels(channels);
 
         for (int i = 0; i < _channelMeters.Count; i++)
@@ -2348,6 +2435,9 @@ public partial class MainWindow : Window
         if (saved.DspBypass.HasValue)
             ChkDspBypass.IsChecked = saved.DspBypass.Value;
 
+        if (saved.OverlayVisible.HasValue)
+            ChkDirectionOverlay.IsChecked = saved.OverlayVisible.Value;
+
         if (saved.SetDefaultDevice.HasValue)
             ChkSetDefaultDevice.IsChecked = saved.SetDefaultDevice.Value;
 
@@ -2389,6 +2479,9 @@ public partial class MainWindow : Window
             SurroundWidth = SliderSurround.Value,
             DspBypass = ChkDspBypass.IsChecked == true,
             SetDefaultDevice = ChkSetDefaultDevice.IsChecked == true,
+            OverlayVisible = ChkDirectionOverlay.IsChecked == true,
+            OverlayLeft = _directionOverlay?.Left,
+            OverlayTop = _directionOverlay?.Top,
             CaptureDeviceId = (CaptureDeviceComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString(),
             OutputDeviceId = (DeviceComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString(),
             OutputFormatTag = (OutputFormatComboBox.SelectedItem as ComboBoxItem)?.Tag?.ToString(),
@@ -2690,6 +2783,7 @@ public partial class MainWindow : Window
         try { UiSettingsStore.Save(CaptureUiSettings()); }
         catch { /* 忽略 */ }
 
+        CloseDirectionOverlay();
         _statusTimer?.Stop();
         StopAudio();
         _testTonePlayer?.Dispose();

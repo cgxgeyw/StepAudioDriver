@@ -16,6 +16,7 @@
 - **按风格重做的预设**：游戏 / 电影 / 竞技精准 / 男声 / 女声 / R&B / 摇滚 / 金属 / 舞曲 / 交响 / 原声 / 平坦
 - **BassBoost**：低频倍率真实作用到 32/64 Hz 两个低架
 - **一键游戏模式**：切换 8 声道端点、默认播放设备、捕获和游戏预设
+- **方向悬浮窗**：置顶小雷达，根据 8 声道电平实时显示声音来自前/后/左/右
 - **声道电平页**：实时查看 8 个声道的 RMS 电平，判断游戏是否真的输出 7.1
 - **缓冲档位**：稳定 / 平衡 / 低延迟，按机器承受能力选择
 - **设置记忆**：关闭时保存预设、EQ、设备、格式、缓冲；下次启动恢复
@@ -32,12 +33,14 @@
 |---|---|
 | ![设置](docs/images/settings-tab.png) | ![预设](docs/images/eq-tab.png) |
 
+![方向悬浮窗](docs/images/direction-overlay.png)
+
 ## 安装
 
 从 [Releases](https://github.com/cgxgeyw/StepAudioDriver/releases/latest) 下载：
 
 ```
-StepAudioDriver-1.0.0.msi
+StepAudioDriver-1.1.0.msi
 ```
 
 双击安装即可。安装范围为当前用户，目录：
