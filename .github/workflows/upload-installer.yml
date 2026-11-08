@@ -1,0 +1,31 @@
+name: Upload installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v1.0.0"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout installer branch
+        uses: actions/checkout@v4
+        with:
+          ref: installer-asset
+
+      - name: Upload MSI to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release upload "$TAG" \
+            installer/StepAudioDriver-1.0.0.msi \
+            installer/StepAudioDriver-1.0.0.sha256 \
+            --clobber
