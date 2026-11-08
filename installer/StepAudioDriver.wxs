@@ -3,7 +3,7 @@
 
   <Package Name="Step 音频驱动"
            Manufacturer="Step Audio"
-           Version="1.5.0"
+           Version="1.6.0"
            UpgradeCode="E4E18DA1-362D-4004-855C-70E75CB38679"
            Scope="perUser"
            Compressed="yes"

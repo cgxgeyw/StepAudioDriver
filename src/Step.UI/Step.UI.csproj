@@ -6,10 +6,10 @@
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
-    <UseWindowsForms>false</UseWindowsForms>
+    <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>StepAudioDriver</AssemblyName>
     <RootNamespace>Step.UI</RootNamespace>
-    <Version>1.5.0</Version>
+    <Version>1.6.0</Version>
     <Authors>cgxgeyw</Authors>
     <Product>Step 音频驱动</Product>
     <Description>Virtual 7.1 HRTF audio control center for Fosi Audio SK02 and other WASAPI devices.</Description>
@@ -17,6 +17,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>Assets\step.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 仅通过别名使用 WinForms 托盘图标，避免和 WPF 类型冲突 -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- WPF UI 框架 -->

@@ -11,6 +11,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using NAudio.CoreAudioApi;
+using WinForms = System.Windows.Forms;
+using Drawing = System.Drawing;
 using NAudio.Wave;
 using Step.Core.Audio;
 using Step.Core.Audio.DSP;
@@ -39,6 +41,8 @@ public partial class MainWindow : Window
     private string? _closeAction;
     private bool _forceClose;
     private bool _closeDialogOpen;
+    private WinForms.NotifyIcon? _trayIcon;
+    private WinForms.ToolStripMenuItem? _trayAudioItem;
     private int _recoveryAttempts;
     private DateTime _recoveryWindowStart = DateTime.UtcNow;
     private string _selectedDeviceId = string.Empty;
@@ -105,6 +109,7 @@ public partial class MainWindow : Window
         InitializePresetsAtStartup();
 
         Loaded += MainWindow_Loaded;
+        InitializeTrayIcon();
 
         if (Application.Current != null)
             Application.Current.SessionEnding += (_, _) => _forceClose = true;
@@ -328,7 +333,7 @@ public partial class MainWindow : Window
 
     private void BtnMinimize_Click(object sender, RoutedEventArgs e)
     {
-        WindowState = WindowState.Minimized;
+        HideToTray();
     }
 
     private void BtnMaximize_Click(object sender, RoutedEventArgs e)
@@ -404,12 +409,95 @@ public partial class MainWindow : Window
     {
         if (choice == "minimize")
         {
-            WindowState = WindowState.Minimized;
+            HideToTray();
             return;
         }
 
         _forceClose = true;
         Close();
+    }
+
+    private void InitializeTrayIcon()
+    {
+        try
+        {
+            var stream = System.Windows.Application.GetResourceStream(
+                new Uri("pack://application:,,,/Assets/step.ico"))?.Stream;
+
+            if (stream == null)
+                return;
+
+            _trayIcon = new WinForms.NotifyIcon
+            {
+                Icon = new Drawing.Icon(stream),
+                Text = "Step 音频驱动",
+                Visible = true
+            };
+
+            var menu = new WinForms.ContextMenuStrip();
+
+            var openItem = new WinForms.ToolStripMenuItem("打开主界面");
+            openItem.Click += (_, _) => RestoreFromTray();
+
+            _trayAudioItem = new WinForms.ToolStripMenuItem("启动音频");
+            _trayAudioItem.Click += (_, _) => ToggleAudioFromTray();
+
+            var exitItem = new WinForms.ToolStripMenuItem("退出");
+            exitItem.Click += (_, _) =>
+            {
+                _forceClose = true;
+                Close();
+            };
+
+            menu.Items.Add(openItem);
+            menu.Items.Add(new WinForms.ToolStripSeparator());
+            menu.Items.Add(_trayAudioItem);
+            menu.Items.Add(new WinForms.ToolStripSeparator());
+            menu.Items.Add(exitItem);
+
+            menu.Opening += (_, _) =>
+            {
+                if (_trayAudioItem != null)
+                    _trayAudioItem.Text = _audioProcessor == null ? "启动音频" : "停止音频";
+            };
+
+            _trayIcon.ContextMenuStrip = menu;
+            _trayIcon.DoubleClick += (_, _) => RestoreFromTray();
+        }
+        catch (Exception ex)
+        {
+            Log($"托盘图标初始化失败：{ex}");
+        }
+    }
+
+    private void HideToTray()
+    {
+        if (_trayIcon == null)
+        {
+            // 极端情况下托盘初始化失败，退回任务栏最小化，至少不会丢窗口
+            WindowState = WindowState.Minimized;
+            return;
+        }
+
+        Hide();
+    }
+
+    private void RestoreFromTray()
+    {
+        Show();
+
+        if (WindowState == WindowState.Minimized)
+            WindowState = WindowState.Normal;
+
+        Activate();
+    }
+
+    private async void ToggleAudioFromTray()
+    {
+        if (_audioProcessor != null)
+            StopAudio();
+        else
+            await StartAudioAsync();
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -581,8 +669,19 @@ public partial class MainWindow : Window
             ChkAutoStart.IsChecked = StartupManager.IsEnabled();
             _syncingAutoStart = false;
 
-            if (Environment.GetCommandLineArgs().Any(a => a == "--autostart"))
-                WindowState = WindowState.Minimized;
+            bool autostart = Environment.GetCommandLineArgs().Any(a => a == "--autostart");
+            bool skipAutoAudio = Environment.GetCommandLineArgs().Any(a => a == "--ui-no-audio");
+
+            if (!skipAutoAudio)
+                await StartAudioAsync();
+
+            if (autostart)
+            {
+                if (_audioProcessor != null)
+                    HideToTray();
+                else
+                    Show();
+            }
 
             // 布局完成后再画一次，修正初始尺寸
             _ = Dispatcher.BeginInvoke(new Action(() => DrawEQCurve()), DispatcherPriority.Loaded);
@@ -3309,6 +3408,14 @@ public partial class MainWindow : Window
         StopAudio();
         _testTonePlayer?.Dispose();
         _hidManager?.Dispose();
+
+        if (_trayIcon != null)
+        {
+            _trayIcon.Visible = false;
+            _trayIcon.Dispose();
+            _trayIcon = null;
+        }
+
         base.OnClosed(e);
     }
 }
