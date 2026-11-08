@@ -33,6 +33,7 @@ public partial class MainWindow : Window
     private DirectionalTestPlayer? _testTonePlayer;
     private bool _isStartingAudio;
     private bool _isRecoveringAudio;
+    private bool _syncingAutoStart;
     private int _recoveryAttempts;
     private DateTime _recoveryWindowStart = DateTime.UtcNow;
     private string _selectedDeviceId = string.Empty;
@@ -211,6 +212,35 @@ public partial class MainWindow : Window
     {
         if (_audioProcessor != null)
             _audioProcessor.DspBypass = ChkDspBypass.IsChecked == true;
+    }
+
+    private void ChkAutoStart_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_syncingAutoStart)
+            return;
+
+        try
+        {
+            string? executablePath = Environment.ProcessPath;
+
+            if (string.IsNullOrWhiteSpace(executablePath) ||
+                !executablePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("当前不是以 exe 形式运行，无法设置开机自启动。");
+            }
+
+            StartupManager.SetEnabled(ChkAutoStart.IsChecked == true, executablePath);
+            Log($"开机自启动：{(ChkAutoStart.IsChecked == true ? "已启用" : "已关闭")}");
+        }
+        catch (Exception ex)
+        {
+            _syncingAutoStart = true;
+            ChkAutoStart.IsChecked = !(ChkAutoStart.IsChecked == true);
+            _syncingAutoStart = false;
+
+            MessageBox.Show($"设置开机自启动失败：{ex.Message}", "提示",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void ChkDirectionOverlay_Changed(object sender, RoutedEventArgs e)
@@ -428,6 +458,13 @@ public partial class MainWindow : Window
 
             // 仅调试构建：--ui-overlay 用于无需音频的悬浮窗截图/验证
 #if DEBUG
+            if (Environment.GetCommandLineArgs().Any(a => a == "--ui-settings"))
+            {
+                _ = Dispatcher.BeginInvoke(
+                    new Action(() => MainTabs.SelectedIndex = 3),
+                    DispatcherPriority.Loaded);
+            }
+
             if (Environment.GetCommandLineArgs().Any(a => a == "--ui-overlay"))
                 ChkDirectionOverlay.IsChecked = true;
 
@@ -449,6 +486,13 @@ public partial class MainWindow : Window
                 demoTimer.Start();
             }
 #endif
+
+            _syncingAutoStart = true;
+            ChkAutoStart.IsChecked = StartupManager.IsEnabled();
+            _syncingAutoStart = false;
+
+            if (Environment.GetCommandLineArgs().Any(a => a == "--autostart"))
+                WindowState = WindowState.Minimized;
 
             // 布局完成后再画一次，修正初始尺寸
             _ = Dispatcher.BeginInvoke(new Action(() => DrawEQCurve()), DispatcherPriority.Loaded);
@@ -1330,7 +1374,7 @@ public partial class MainWindow : Window
         LockHint.Visibility = editable ? Visibility.Collapsed : Visibility.Visible;
 
         CurveHint.Text = editable
-            ? "拖动曲线控制点同时调整频率与增益，双击单段复位"
+            ? "曲线为 10 段 + 搁架总响应；拖动控制点调整该段频率/增益"
             : "内置预设只读，切换到「自定义」后可调整";
     }
 
@@ -1799,6 +1843,15 @@ public partial class MainWindow : Window
         return PlotDbRange - t * PlotDbRange * 2;
     }
 
+    /// <summary>
+    /// 该频点的总响应（10 段 + 两个搁架的叠加），控制点画在这里才能落在曲线上。
+    /// </summary>
+    private double TotalResponseAt(double frequency)
+    {
+        var response = _curveEngine.GetMagnitudeResponseDb(new[] { (float)Math.Clamp(frequency, 1, 20000) });
+        return response[0];
+    }
+
     private void DrawEQCurve()
     {
         if (EQCurveCanvas == null) return;
@@ -1938,7 +1991,10 @@ public partial class MainWindow : Window
         for (int i = 0; i < 10; i++)
         {
             double x = FrequencyToX(_eqFrequencies[i], left, plotWidth);
-            double y = GainToY(_eqBands[i], top, plotHeight);
+            double y = GainToY(
+                Math.Clamp(TotalResponseAt(_eqFrequencies[i]), -PlotDbRange, PlotDbRange),
+                top,
+                plotHeight);
 
             bool active = i == _selectedBand;
             bool hover = i == _hoverBand;
@@ -2004,7 +2060,10 @@ public partial class MainWindow : Window
         for (int i = 0; i < 10; i++)
         {
             double x = FrequencyToX(_eqFrequencies[i], left, plotWidth);
-            double y = GainToY(_eqBands[i], top, plotHeight);
+            double y = GainToY(
+                Math.Clamp(TotalResponseAt(_eqFrequencies[i]), -PlotDbRange, PlotDbRange),
+                top,
+                plotHeight);
 
             double dx = position.X - x;
             double dy = position.Y - y;
@@ -2072,7 +2131,9 @@ public partial class MainWindow : Window
 
         var (left, top, plotWidth, plotHeight) = GetPlotRegion();
 
-        double gain = Math.Clamp(YToGain(position.Y, top, plotHeight), -12, 12);
+        double desiredTotal = Math.Clamp(YToGain(position.Y, top, plotHeight), -12, 12);
+        double currentTotal = TotalResponseAt(_eqFrequencies[band]);
+        double gain = Math.Clamp(_eqBands[band] + (desiredTotal - currentTotal), -12, 12);
         double frequency = XToFrequency(position.X, left, plotWidth);
 
         double lower = band == 0 ? 20 : _eqFrequencies[band - 1] * 1.03;

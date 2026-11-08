@@ -3,7 +3,7 @@
 
   <Package Name="Step 音频驱动"
            Manufacturer="Step Audio"
-           Version="1.3.0"
+           Version="1.4.0"
            UpgradeCode="E4E18DA1-362D-4004-855C-70E75CB38679"
            Scope="perUser"
            Compressed="yes"
@@ -43,7 +43,21 @@
       <ComponentRef Id="DesktopShortcut" />
     </Feature>
 
+    <InstallExecuteSequence>
+      <Custom Action="RemoveStartupEntry" Before="InstallFinalize"
+              Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+    </InstallExecuteSequence>
+
   </Package>
+
+  <Fragment>
+    <CustomAction Id="RemoveStartupEntry"
+                  Directory="SystemFolder"
+                  ExeCommand='"[SystemFolder]reg.exe" delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v StepAudioDriver /f'
+                  Execute="deferred"
+                  Impersonate="yes"
+                  Return="ignore" />
+  </Fragment>
 
   <Fragment>
     <ComponentGroup Id="AppFiles" Directory="INSTALLFOLDER">

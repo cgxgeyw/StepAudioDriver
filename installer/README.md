@@ -2,8 +2,8 @@
 
 ## 文件
 
-- `StepAudioDriver-1.3.0.msi`：Windows 安装包（64 位，自带 .NET 8 运行时）
-- `StepAudioDriver-1.3.0.sha256`：安装包校验值
+- `StepAudioDriver-1.4.0.msi`：Windows 安装包（64 位，自带 .NET 8 运行时）
+- `StepAudioDriver-1.4.0.sha256`：安装包校验值
 
 ## 系统要求
 
@@ -15,7 +15,7 @@ VB-CABLE 不随安装包分发，请从 [VB-Audio 官网](https://vb-audio.com/C
 
 ## 安装
 
-1. 双击 `StepAudioDriver-1.3.0.msi`
+1. 双击 `StepAudioDriver-1.4.0.msi`
 2. 按提示完成；安装范围为**当前用户**，不需要管理员权限
 3. 开始菜单和桌面会创建 `Step 音频驱动` 快捷方式
 
