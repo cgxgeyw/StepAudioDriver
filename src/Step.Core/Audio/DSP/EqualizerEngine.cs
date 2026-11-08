@@ -24,6 +24,8 @@ public class EqualizerEngine
     };
 
     private const float DefaultQ = 1.0f;
+    private const float MinQ = 0.5f;
+    private const float MaxQ = 10f;
     private const float MinGainDb = -12f;
     private const float MaxGainDb = 12f;
 
@@ -31,22 +33,37 @@ public class EqualizerEngine
     private readonly float[] _qFactors = Enumerable.Repeat(DefaultQ, BandCount).ToArray();
     private readonly float[] _bandGains = new float[BandCount];
 
+    private float _lowShelfFrequency = 100f;
+    private float _lowShelfGainDb;
+    private float _lowShelfQ = 0.7f;
+
+    private float _highShelfFrequency = 10000f;
+    private float _highShelfGainDb;
+    private float _highShelfQ = 0.7f;
+
     private int _sampleRate = 48000;
 
     /// <summary>
     /// 系数快照：[band][b0, b1, b2, a1, a2]（已按 a0 归一化）
     /// </summary>
     private volatile float[][] _coefficients;
+    private volatile float[] _lowShelfCoefficients = [1f, 0f, 0f, 0f, 0f];
+    private volatile float[] _highShelfCoefficients = [1f, 0f, 0f, 0f, 0f];
 
     // 每段、每声道独立的延迟线状态
     private readonly DelayLine[] _delayLeft;
     private readonly DelayLine[] _delayRight;
+    private readonly DelayLine _lowShelfLeft = new();
+    private readonly DelayLine _lowShelfRight = new();
+    private readonly DelayLine _highShelfLeft = new();
+    private readonly DelayLine _highShelfRight = new();
 
     public EqualizerEngine()
     {
         _delayLeft = Enumerable.Range(0, BandCount).Select(_ => new DelayLine()).ToArray();
         _delayRight = Enumerable.Range(0, BandCount).Select(_ => new DelayLine()).ToArray();
         _coefficients = BuildCoefficients();
+        RebuildShelfCoefficients();
     }
 
     /// <summary>
@@ -62,6 +79,7 @@ public class EqualizerEngine
 
         _sampleRate = sampleRate;
         _coefficients = BuildCoefficients();
+        RebuildShelfCoefficients();
         ResetStates();
     }
 
@@ -85,7 +103,7 @@ public class EqualizerEngine
 
         float nyquist = _sampleRate / 2f;
         _centerFrequencies[bandIndex] = Math.Clamp(frequencyHz, 20f, nyquist * 0.9f);
-        _qFactors[bandIndex] = Math.Clamp(q, 0.85f, 10f);
+        _qFactors[bandIndex] = Math.Clamp(q, MinQ, MaxQ);
 
         _coefficients = BuildCoefficients();
     }
@@ -122,11 +140,44 @@ public class EqualizerEngine
         {
             _bandGains[i] = Math.Clamp(gains[i], MinGainDb, MaxGainDb);
             _centerFrequencies[i] = Math.Clamp(frequencies[i], 20f, nyquist * 0.9f);
-            _qFactors[i] = Math.Clamp(qFactors[i], 0.85f, 10f);
+            _qFactors[i] = Math.Clamp(qFactors[i], MinQ, MaxQ);
         }
 
         _coefficients = BuildCoefficients();
     }
+
+    /// <summary>
+    /// 设置低频搁架。Q 决定搁架斜率，与 10 段 peaking 的 Q 独立。
+    /// </summary>
+    public void SetLowShelf(float frequencyHz, float gainDb, float q)
+    {
+        float nyquist = _sampleRate / 2f;
+        _lowShelfFrequency = Math.Clamp(frequencyHz, 20f, nyquist * 0.9f);
+        _lowShelfGainDb = Math.Clamp(gainDb, MinGainDb, MaxGainDb);
+        _lowShelfQ = Math.Clamp(q, 0.4f, 4f);
+
+        _lowShelfCoefficients = ComputeLowShelf(_lowShelfFrequency, _lowShelfGainDb, _lowShelfQ);
+    }
+
+    /// <summary>
+    /// 设置高频搁架。
+    /// </summary>
+    public void SetHighShelf(float frequencyHz, float gainDb, float q)
+    {
+        float nyquist = _sampleRate / 2f;
+        _highShelfFrequency = Math.Clamp(frequencyHz, 20f, nyquist * 0.9f);
+        _highShelfGainDb = Math.Clamp(gainDb, MinGainDb, MaxGainDb);
+        _highShelfQ = Math.Clamp(q, 0.4f, 4f);
+
+        _highShelfCoefficients = ComputeHighShelf(_highShelfFrequency, _highShelfGainDb, _highShelfQ);
+    }
+
+    public float LowShelfFrequency => _lowShelfFrequency;
+    public float LowShelfGainDb => _lowShelfGainDb;
+    public float LowShelfQ => _lowShelfQ;
+    public float HighShelfFrequency => _highShelfFrequency;
+    public float HighShelfGainDb => _highShelfGainDb;
+    public float HighShelfQ => _highShelfQ;
 
     /// <summary>
     /// 计算当前参数下的幅频响应 (dB)，用于界面曲线
@@ -134,6 +185,8 @@ public class EqualizerEngine
     public float[] GetMagnitudeResponseDb(float[] frequencies)
     {
         var coefficients = _coefficients;
+        var lowShelf = _lowShelfCoefficients;
+        var highShelf = _highShelfCoefficients;
         var result = new float[frequencies.Length];
 
         for (int k = 0; k < frequencies.Length; k++)
@@ -149,24 +202,28 @@ public class EqualizerEngine
             double magnitude = 1.0;
 
             for (int band = 0; band < BandCount; band++)
-            {
-                var c = coefficients[band];
+                magnitude *= CoefficientMagnitude(coefficients[band], cos1, sin1, cos2, sin2);
 
-                double numRe = c[0] + c[1] * cos1 + c[2] * cos2;
-                double numIm = c[1] * sin1 + c[2] * sin2;
-                double denRe = 1.0 + c[3] * cos1 + c[4] * cos2;
-                double denIm = c[3] * sin1 + c[4] * sin2;
-
-                double num = Math.Sqrt(numRe * numRe + numIm * numIm);
-                double den = Math.Sqrt(denRe * denRe + denIm * denIm);
-
-                magnitude *= num / Math.Max(den, 1e-12);
-            }
+            magnitude *= CoefficientMagnitude(lowShelf, cos1, sin1, cos2, sin2);
+            magnitude *= CoefficientMagnitude(highShelf, cos1, sin1, cos2, sin2);
 
             result[k] = (float)(20.0 * Math.Log10(Math.Max(magnitude, 1e-9)));
         }
 
         return result;
+    }
+
+    private static double CoefficientMagnitude(float[] c, double cos1, double sin1, double cos2, double sin2)
+    {
+        double numRe = c[0] + c[1] * cos1 + c[2] * cos2;
+        double numIm = c[1] * sin1 + c[2] * sin2;
+        double denRe = 1.0 + c[3] * cos1 + c[4] * cos2;
+        double denIm = c[3] * sin1 + c[4] * sin2;
+
+        double num = Math.Sqrt(numRe * numRe + numIm * numIm);
+        double den = Math.Sqrt(denRe * denRe + denIm * denIm);
+
+        return num / Math.Max(den, 1e-12);
     }
 
     /// <summary>
@@ -199,7 +256,10 @@ public class EqualizerEngine
     public void Reset()
     {
         Array.Clear(_bandGains);
+        _lowShelfGainDb = 0;
+        _highShelfGainDb = 0;
         _coefficients = BuildCoefficients();
+        RebuildShelfCoefficients();
         ResetStates();
     }
 
@@ -234,6 +294,8 @@ public class EqualizerEngine
     private void ProcessInto(float[] input, int length, float[] output, DelayLine[] leftStates, int stride)
     {
         var coefficients = _coefficients;
+        var lowShelf = _lowShelfCoefficients;
+        var highShelf = _highShelfCoefficients;
 
         for (int i = 0; i < length; i += stride)
         {
@@ -245,6 +307,15 @@ public class EqualizerEngine
                 left = ApplyBiquadFilter(left, coefficients[band], leftStates[band]);
                 if (stride == 2)
                     right = ApplyBiquadFilter(right, coefficients[band], _delayRight[band]);
+            }
+
+            left = ApplyBiquadFilter(left, lowShelf, _lowShelfLeft);
+            left = ApplyBiquadFilter(left, highShelf, _highShelfLeft);
+
+            if (stride == 2)
+            {
+                right = ApplyBiquadFilter(right, lowShelf, _lowShelfRight);
+                right = ApplyBiquadFilter(right, highShelf, _highShelfRight);
             }
 
             output[i] = left;
@@ -318,12 +389,73 @@ public class EqualizerEngine
         return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
     }
 
+    private void RebuildShelfCoefficients()
+    {
+        _lowShelfCoefficients = ComputeLowShelf(_lowShelfFrequency, _lowShelfGainDb, _lowShelfQ);
+        _highShelfCoefficients = ComputeHighShelf(_highShelfFrequency, _highShelfGainDb, _highShelfQ);
+    }
+
+    /// <summary>
+    /// RBJ low shelf 系数（a0 归一化）
+    /// </summary>
+    private float[] ComputeLowShelf(float frequency, float gainDb, float q)
+    {
+        if (Math.Abs(gainDb) < 0.01f)
+            return [1f, 0f, 0f, 0f, 0f];
+
+        float w0 = 2f * MathF.PI * frequency / _sampleRate;
+        float sinW0 = MathF.Sin(w0);
+        float cosW0 = MathF.Cos(w0);
+        float amp = MathF.Pow(10f, gainDb / 40f);
+        float alpha = sinW0 / (2f * Math.Clamp(q, 0.4f, 4f));
+        float twoSqrtAAlpha = 2f * MathF.Sqrt(amp) * alpha;
+
+        float b0 = amp * ((amp + 1f) - (amp - 1f) * cosW0 + twoSqrtAAlpha);
+        float b1 = 2f * amp * ((amp - 1f) - (amp + 1f) * cosW0);
+        float b2 = amp * ((amp + 1f) - (amp - 1f) * cosW0 - twoSqrtAAlpha);
+        float a0 = (amp + 1f) + (amp - 1f) * cosW0 + twoSqrtAAlpha;
+        float a1 = -2f * ((amp - 1f) + (amp + 1f) * cosW0);
+        float a2 = (amp + 1f) + (amp - 1f) * cosW0 - twoSqrtAAlpha;
+
+        return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+    }
+
+    /// <summary>
+    /// RBJ high shelf 系数（a0 归一化）
+    /// </summary>
+    private float[] ComputeHighShelf(float frequency, float gainDb, float q)
+    {
+        if (Math.Abs(gainDb) < 0.01f)
+            return [1f, 0f, 0f, 0f, 0f];
+
+        float w0 = 2f * MathF.PI * frequency / _sampleRate;
+        float sinW0 = MathF.Sin(w0);
+        float cosW0 = MathF.Cos(w0);
+        float amp = MathF.Pow(10f, gainDb / 40f);
+        float alpha = sinW0 / (2f * Math.Clamp(q, 0.4f, 4f));
+        float twoSqrtAAlpha = 2f * MathF.Sqrt(amp) * alpha;
+
+        float b0 = amp * ((amp + 1f) + (amp - 1f) * cosW0 + twoSqrtAAlpha);
+        float b1 = -2f * amp * ((amp - 1f) + (amp + 1f) * cosW0);
+        float b2 = amp * ((amp + 1f) + (amp - 1f) * cosW0 - twoSqrtAAlpha);
+        float a0 = (amp + 1f) - (amp - 1f) * cosW0 + twoSqrtAAlpha;
+        float a1 = 2f * ((amp - 1f) - (amp + 1f) * cosW0);
+        float a2 = (amp + 1f) - (amp - 1f) * cosW0 - twoSqrtAAlpha;
+
+        return [b0 / a0, b1 / a0, b2 / a0, a1 / a0, a2 / a0];
+    }
+
     private void ResetStates()
     {
         foreach (var state in _delayLeft)
             state.Reset();
         foreach (var state in _delayRight)
             state.Reset();
+
+        _lowShelfLeft.Reset();
+        _lowShelfRight.Reset();
+        _highShelfLeft.Reset();
+        _highShelfRight.Reset();
     }
 
     private static void ValidateBand(int bandIndex)

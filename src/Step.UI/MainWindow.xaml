@@ -610,6 +610,7 @@
 
             <!-- 频段控制条（10 列在代码里生成，保证上下对齐） -->
             <StackPanel Grid.Row="2" Margin="0,10,0,0">
+              <Grid Name="ShelfStrip" Margin="0,0,0,8"/>
               <Grid Margin="0,0,0,4">
                 <TextBlock Name="CurveHint" Text="拖动曲线控制点同时调整频率与增益，双击单段复位"
                            FontSize="11.5" Foreground="{StaticResource BrText3}"/>

@@ -19,6 +19,13 @@ public sealed class UiSettings
     public bool? DspBypass { get; set; }
     public bool? SetDefaultDevice { get; set; }
 
+    public double? LowShelfFrequency { get; set; }
+    public double? LowShelfGain { get; set; }
+    public double? LowShelfQ { get; set; }
+    public double? HighShelfFrequency { get; set; }
+    public double? HighShelfGain { get; set; }
+    public double? HighShelfQ { get; set; }
+
     public bool? OverlayVisible { get; set; }
     public double? OverlayLeft { get; set; }
     public double? OverlayTop { get; set; }

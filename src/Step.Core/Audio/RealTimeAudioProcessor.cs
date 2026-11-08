@@ -497,6 +497,18 @@ public class RealTimeAudioProcessor : IDisposable
         _equalizerEngine.SetBandParameters(bandIndex, frequencyHz, q);
     }
 
+    /// <summary>设置低频搁架（频率、增益、Q 独立）</summary>
+    public void SetLowShelf(float frequencyHz, float gainDb, float q)
+    {
+        _equalizerEngine.SetLowShelf(frequencyHz, gainDb, q);
+    }
+
+    /// <summary>设置高频搁架（频率、增益、Q 独立）</summary>
+    public void SetHighShelf(float frequencyHz, float gainDb, float q)
+    {
+        _equalizerEngine.SetHighShelf(frequencyHz, gainDb, q);
+    }
+
     /// <summary>
     /// 设置音量（线性 0-1）
     /// </summary>

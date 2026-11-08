@@ -55,6 +55,20 @@ public partial class MainWindow : Window
     private readonly TextBox[] _eqDbBoxes = new TextBox[10];
     private readonly TextBox[] _eqQBoxes = new TextBox[10];
 
+    private double _lowShelfFrequency = 100;
+    private double _lowShelfGain;
+    private double _lowShelfQ = 0.7;
+    private double _highShelfFrequency = 10000;
+    private double _highShelfGain;
+    private double _highShelfQ = 0.7;
+
+    private TextBox? _lowShelfFreqBox;
+    private TextBox? _lowShelfGainBox;
+    private TextBox? _lowShelfQBox;
+    private TextBox? _highShelfFreqBox;
+    private TextBox? _highShelfGainBox;
+    private TextBox? _highShelfQBox;
+
     // 曲线只用于显示，用同一套 EqualizerEngine 计算真实幅频响应
     private readonly EqualizerEngine _curveEngine = new();
 
@@ -79,6 +93,7 @@ public partial class MainWindow : Window
 
         _curveEngine.SetSampleRate(48000);
         BuildBandStrip();
+        BuildShelfStrip();
         BuildChannelMeters();
         UpdateCurveEngine();
         InitializePresetsAtStartup();
@@ -797,13 +812,16 @@ public partial class MainWindow : Window
             processor.SetEQBandGain(i, (float)_eqBands[i]);
         }
 
+        processor.SetLowShelf((float)_lowShelfFrequency, (float)_lowShelfGain, (float)_lowShelfQ);
+        processor.SetHighShelf((float)_highShelfFrequency, (float)_highShelfGain, (float)_highShelfQ);
+
         processor.SetHrtfEnabled(ChkHrtf.IsChecked == true);
         processor.SetHRTFIntensity((float)SliderHRTF.Value);
         processor.SetSurroundWidth((float)SliderSurround.Value);
         processor.DspBypass = ChkDspBypass.IsChecked == true;
 
         // EQ 前按最大正增益预衰减，避免 EQ 后峰值顶到限幅器（+1dB 余量）
-        double maxBoost = 0;
+        double maxBoost = Math.Max(_lowShelfGain, _highShelfGain);
         for (int i = 0; i < _eqBands.Length; i++)
             maxBoost = Math.Max(maxBoost, _eqBands[i]);
 
@@ -1236,6 +1254,20 @@ public partial class MainWindow : Window
                     _eqDbBoxes[i].Text = _eqBands[i].ToString("0.0");
             }
 
+            _lowShelfFrequency = Math.Clamp(preset.LowShelfFrequency, 20, 20000);
+            _lowShelfGain = Math.Clamp(preset.LowShelfGain, -12, 12);
+            _lowShelfQ = Math.Clamp(preset.LowShelfQ, 0.4, 4);
+            _highShelfFrequency = Math.Clamp(preset.HighShelfFrequency, 20, 20000);
+            _highShelfGain = Math.Clamp(preset.HighShelfGain, -12, 12);
+            _highShelfQ = Math.Clamp(preset.HighShelfQ, 0.4, 4);
+
+            if (_lowShelfFreqBox != null) _lowShelfFreqBox.Text = _lowShelfFrequency.ToString("0");
+            if (_lowShelfGainBox != null) _lowShelfGainBox.Text = _lowShelfGain.ToString("0.0");
+            if (_lowShelfQBox != null) _lowShelfQBox.Text = _lowShelfQ.ToString("0.0");
+            if (_highShelfFreqBox != null) _highShelfFreqBox.Text = _highShelfFrequency.ToString("0");
+            if (_highShelfGainBox != null) _highShelfGainBox.Text = _highShelfGain.ToString("0.0");
+            if (_highShelfQBox != null) _highShelfQBox.Text = _highShelfQ.ToString("0.0");
+
             _syncingBandUi = false;
 
             SliderHRTF.Value = Math.Clamp(preset.HRTFIntensity, 0.5, 2.0);
@@ -1285,6 +1317,8 @@ public partial class MainWindow : Window
 
         BandStrip.IsEnabled = editable;
         BandStrip.Opacity = editable ? 1.0 : 0.4;
+        ShelfStrip.IsEnabled = editable;
+        ShelfStrip.Opacity = editable ? 1.0 : 0.4;
 
         EQCurveCanvas.IsHitTestVisible = editable;
         EQCurveCanvas.Cursor = editable ? Cursors.Cross : Cursors.Arrow;
@@ -1389,7 +1423,7 @@ public partial class MainWindow : Window
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 4, 0, 0),
-                ToolTip = "Q 值（0.85–10）"
+                ToolTip = "Q 值（0.5–10，每段独立）"
             };
             qBox.LostFocus += (_, _) => CommitQ(band);
             qBox.KeyDown += (_, e) =>
@@ -1420,6 +1454,159 @@ public partial class MainWindow : Window
         }
     }
 
+    private void BuildShelfStrip()
+    {
+        ShelfStrip.Children.Clear();
+        ShelfStrip.ColumnDefinitions.Clear();
+
+        for (int i = 0; i < 2; i++)
+            ShelfStrip.ColumnDefinitions.Add(new ColumnDefinition());
+
+        var numericStyle = (Style)FindResource("NumericBox");
+        var textMuted = (SolidColorBrush)FindResource("BrText3");
+
+        for (int shelf = 0; shelf < 2; shelf++)
+        {
+            bool low = shelf == 0;
+
+            var panel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 0, 18, 0)
+            };
+
+            panel.Children.Add(new TextBlock
+            {
+                Text = low ? "低频搁架" : "高频搁架",
+                Width = 62,
+                FontSize = 11.5,
+                Foreground = textMuted,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            TextBox MakeBox(double value, double width, string tooltip)
+            {
+                var box = new TextBox
+                {
+                    Style = numericStyle,
+                    Text = value.ToString("0.0"),
+                    Width = width,
+                    Height = 26,
+                    FontSize = 11.5,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 0, 4, 0),
+                    ToolTip = tooltip
+                };
+                box.LostFocus += (_, _) => CommitShelf(low);
+                box.KeyDown += (_, e) =>
+                {
+                    if (e.Key != Key.Enter) return;
+                    CommitShelf(low);
+                    Keyboard.ClearFocus();
+                };
+                return box;
+            }
+
+            var freqBox = MakeBox(
+                low ? _lowShelfFrequency : _highShelfFrequency,
+                62,
+                "搁架频率 (Hz)");
+
+            panel.Children.Add(freqBox);
+            panel.Children.Add(UnitLabel("Hz", textMuted));
+
+            var gainBox = MakeBox(
+                low ? _lowShelfGain : _highShelfGain,
+                52,
+                "搁架增益 (dB)");
+
+            panel.Children.Add(gainBox);
+            panel.Children.Add(UnitLabel("dB", textMuted));
+
+            var qBox = MakeBox(
+                low ? _lowShelfQ : _highShelfQ,
+                48,
+                "搁架 Q（独立于各频段）");
+
+            panel.Children.Add(qBox);
+            panel.Children.Add(UnitLabel("Q", textMuted));
+
+            Grid.SetColumn(panel, shelf);
+            ShelfStrip.Children.Add(panel);
+
+            if (low)
+            {
+                _lowShelfFreqBox = freqBox;
+                _lowShelfGainBox = gainBox;
+                _lowShelfQBox = qBox;
+            }
+            else
+            {
+                _highShelfFreqBox = freqBox;
+                _highShelfGainBox = gainBox;
+                _highShelfQBox = qBox;
+            }
+        }
+    }
+
+    private static TextBlock UnitLabel(string text, SolidColorBrush brush)
+    {
+        return new TextBlock
+        {
+            Text = text,
+            FontSize = 10.5,
+            Foreground = brush,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 12, 0)
+        };
+    }
+
+    private void CommitShelf(bool low)
+    {
+        var freqBox = low ? _lowShelfFreqBox : _highShelfFreqBox;
+        var gainBox = low ? _lowShelfGainBox : _highShelfGainBox;
+        var qBox = low ? _lowShelfQBox : _highShelfQBox;
+
+        if (freqBox == null || gainBox == null || qBox == null)
+            return;
+
+        if (!double.TryParse(freqBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double frequency))
+            frequency = low ? _lowShelfFrequency : _highShelfFrequency;
+
+        if (!double.TryParse(gainBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double gain))
+            gain = low ? _lowShelfGain : _highShelfGain;
+
+        if (!double.TryParse(qBox.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double q))
+            q = low ? _lowShelfQ : _highShelfQ;
+
+        frequency = Math.Clamp(frequency, 20, 20000);
+        gain = Math.Clamp(gain, -12, 12);
+        q = Math.Clamp(q, 0.4, 4);
+
+        freqBox.Text = frequency.ToString("0");
+        gainBox.Text = gain.ToString("0.0");
+        qBox.Text = q.ToString("0.0");
+
+        if (low)
+        {
+            _lowShelfFrequency = frequency;
+            _lowShelfGain = gain;
+            _lowShelfQ = q;
+            _audioProcessor?.SetLowShelf((float)frequency, (float)gain, (float)q);
+        }
+        else
+        {
+            _highShelfFrequency = frequency;
+            _highShelfGain = gain;
+            _highShelfQ = q;
+            _audioProcessor?.SetHighShelf((float)frequency, (float)gain, (float)q);
+        }
+
+        UpdateCurveEngine();
+        DrawEQCurve();
+    }
+
     /// <summary>
     /// 把当前 10 段参数同步到用于画曲线的引擎
     /// </summary>
@@ -1437,6 +1624,8 @@ public partial class MainWindow : Window
         }
 
         _curveEngine.SetAllBands(gains, freqs, qs);
+        _curveEngine.SetLowShelf((float)_lowShelfFrequency, (float)_lowShelfGain, (float)_lowShelfQ);
+        _curveEngine.SetHighShelf((float)_highShelfFrequency, (float)_highShelfGain, (float)_highShelfQ);
     }
 
     private void CommitFrequency(int band)
@@ -1493,7 +1682,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        q = Math.Clamp(q, 0.85, 10);
+        q = Math.Clamp(q, 0.5, 10);
         _eqQValues[band] = q;
         box.Text = q.ToString("0.0");
 
@@ -2530,7 +2719,7 @@ public partial class MainWindow : Window
                     _eqFrequencies[i] = saved.EqFrequencies[i];
 
                 if (saved.EqQValues is { Length: 10 })
-                    _eqQValues[i] = Math.Clamp(saved.EqQValues[i], 0.85, 10);
+                    _eqQValues[i] = Math.Clamp(saved.EqQValues[i], 0.5, 10);
 
                 if (_eqSliders[i] != null)
                     _eqSliders[i].Value = _eqBands[i];
@@ -2544,6 +2733,20 @@ public partial class MainWindow : Window
                 if (_eqQBoxes[i] != null)
                     _eqQBoxes[i].Text = _eqQValues[i].ToString("0.0");
             }
+
+            if (saved.LowShelfFrequency.HasValue) _lowShelfFrequency = Math.Clamp(saved.LowShelfFrequency.Value, 20, 20000);
+            if (saved.LowShelfGain.HasValue) _lowShelfGain = Math.Clamp(saved.LowShelfGain.Value, -12, 12);
+            if (saved.LowShelfQ.HasValue) _lowShelfQ = Math.Clamp(saved.LowShelfQ.Value, 0.4, 4);
+            if (saved.HighShelfFrequency.HasValue) _highShelfFrequency = Math.Clamp(saved.HighShelfFrequency.Value, 20, 20000);
+            if (saved.HighShelfGain.HasValue) _highShelfGain = Math.Clamp(saved.HighShelfGain.Value, -12, 12);
+            if (saved.HighShelfQ.HasValue) _highShelfQ = Math.Clamp(saved.HighShelfQ.Value, 0.4, 4);
+
+            if (_lowShelfFreqBox != null) _lowShelfFreqBox.Text = _lowShelfFrequency.ToString("0");
+            if (_lowShelfGainBox != null) _lowShelfGainBox.Text = _lowShelfGain.ToString("0.0");
+            if (_lowShelfQBox != null) _lowShelfQBox.Text = _lowShelfQ.ToString("0.0");
+            if (_highShelfFreqBox != null) _highShelfFreqBox.Text = _highShelfFrequency.ToString("0");
+            if (_highShelfGainBox != null) _highShelfGainBox.Text = _highShelfGain.ToString("0.0");
+            if (_highShelfQBox != null) _highShelfQBox.Text = _highShelfQ.ToString("0.0");
 
             _syncingBandUi = false;
             UpdateCurveEngine();
@@ -2609,6 +2812,12 @@ public partial class MainWindow : Window
             SurroundWidth = SliderSurround.Value,
             DspBypass = ChkDspBypass.IsChecked == true,
             SetDefaultDevice = ChkSetDefaultDevice.IsChecked == true,
+            LowShelfFrequency = _lowShelfFrequency,
+            LowShelfGain = _lowShelfGain,
+            LowShelfQ = _lowShelfQ,
+            HighShelfFrequency = _highShelfFrequency,
+            HighShelfGain = _highShelfGain,
+            HighShelfQ = _highShelfQ,
             OverlayVisible = ChkDirectionOverlay.IsChecked == true,
             OverlayLeft = _directionOverlay?.Left,
             OverlayTop = _directionOverlay?.Top,
@@ -2829,6 +3038,15 @@ public partial class MainWindow : Window
             _audioProcessor?.SetEQBandGain(i, 0f);
         }
 
+        _lowShelfGain = 0;
+        _highShelfGain = 0;
+
+        if (_lowShelfGainBox != null) _lowShelfGainBox.Text = "0.0";
+        if (_highShelfGainBox != null) _highShelfGainBox.Text = "0.0";
+
+        _audioProcessor?.SetLowShelf((float)_lowShelfFrequency, 0f, (float)_lowShelfQ);
+        _audioProcessor?.SetHighShelf((float)_highShelfFrequency, 0f, (float)_highShelfQ);
+
         _syncingBandUi = false;
 
         UpdateCurveEngine();
@@ -2852,6 +3070,12 @@ public partial class MainWindow : Window
                 EQBands = _eqBands.Select(v => (float)v).ToArray(),
                 EQFrequencies = _eqFrequencies.Select(v => (float)v).ToArray(),
                 EQQValues = _eqQValues.Select(v => (float)v).ToArray(),
+                LowShelfFrequency = (float)_lowShelfFrequency,
+                LowShelfGain = (float)_lowShelfGain,
+                LowShelfQ = (float)_lowShelfQ,
+                HighShelfFrequency = (float)_highShelfFrequency,
+                HighShelfGain = (float)_highShelfGain,
+                HighShelfQ = (float)_highShelfQ,
                 HRTFIntensity = (float)SliderHRTF.Value,
                 SurroundWidth = (int)SliderSurround.Value,
                 BassBoost = 1.0f
@@ -2892,6 +3116,12 @@ public partial class MainWindow : Window
             currentPreset.EQBands = _eqBands.Select(v => (float)v).ToArray();
             currentPreset.EQFrequencies = _eqFrequencies.Select(v => (float)v).ToArray();
             currentPreset.EQQValues = _eqQValues.Select(v => (float)v).ToArray();
+            currentPreset.LowShelfFrequency = (float)_lowShelfFrequency;
+            currentPreset.LowShelfGain = (float)_lowShelfGain;
+            currentPreset.LowShelfQ = (float)_lowShelfQ;
+            currentPreset.HighShelfFrequency = (float)_highShelfFrequency;
+            currentPreset.HighShelfGain = (float)_highShelfGain;
+            currentPreset.HighShelfQ = (float)_highShelfQ;
             currentPreset.BassBoost = 1.0f;
             _presetManager?.UpdatePreset(currentPreset.Id, currentPreset);
             await _presetManager!.SavePresetsAsync();

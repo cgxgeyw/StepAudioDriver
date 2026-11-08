@@ -127,6 +127,12 @@ public class PresetManager
             EQBands = NormalizeArray(json.EqBands, new float[10]),
             EQFrequencies = NormalizeArray(json.EqFrequencies, DefaultFrequencies),
             EQQValues = NormalizeArray(json.EqQValues, DefaultQValues),
+            LowShelfFrequency = json.LowShelfFrequency,
+            LowShelfGain = json.LowShelfGain,
+            LowShelfQ = json.LowShelfQ,
+            HighShelfFrequency = json.HighShelfFrequency,
+            HighShelfGain = json.HighShelfGain,
+            HighShelfQ = json.HighShelfQ,
             HRTFIntensity = json.HrtfIntensity,
             SurroundWidth = json.SurroundWidth,
             BassBoost = json.BassBoost,
@@ -209,6 +215,19 @@ public class PresetManager
             target.EQQValues = qValues;
             changed = true;
         }
+
+        if (Math.Abs(target.LowShelfFrequency - source.LowShelfFrequency) > 0.01f)
+        { target.LowShelfFrequency = source.LowShelfFrequency; changed = true; }
+        if (Math.Abs(target.LowShelfGain - source.LowShelfGain) > 0.01f)
+        { target.LowShelfGain = source.LowShelfGain; changed = true; }
+        if (Math.Abs(target.LowShelfQ - source.LowShelfQ) > 0.001f)
+        { target.LowShelfQ = source.LowShelfQ; changed = true; }
+        if (Math.Abs(target.HighShelfFrequency - source.HighShelfFrequency) > 0.01f)
+        { target.HighShelfFrequency = source.HighShelfFrequency; changed = true; }
+        if (Math.Abs(target.HighShelfGain - source.HighShelfGain) > 0.01f)
+        { target.HighShelfGain = source.HighShelfGain; changed = true; }
+        if (Math.Abs(target.HighShelfQ - source.HighShelfQ) > 0.001f)
+        { target.HighShelfQ = source.HighShelfQ; changed = true; }
 
         return changed;
     }
@@ -334,6 +353,12 @@ public class PresetManager
                     EqBands = p.EQBands,
                     EqFrequencies = p.EQFrequencies,
                     EqQValues = p.EQQValues,
+                    LowShelfFrequency = p.LowShelfFrequency,
+                    LowShelfGain = p.LowShelfGain,
+                    LowShelfQ = p.LowShelfQ,
+                    HighShelfFrequency = p.HighShelfFrequency,
+                    HighShelfGain = p.HighShelfGain,
+                    HighShelfQ = p.HighShelfQ,
                     HrtfIntensity = p.HRTFIntensity,
                     SurroundWidth = p.SurroundWidth,
                     BassBoost = p.BassBoost,
@@ -405,6 +430,24 @@ public class PresetManager
         [JsonProperty("eqQValues")]
         public float[]? EqQValues { get; set; }
 
+        [JsonProperty("lowShelfFrequency")]
+        public float LowShelfFrequency { get; set; } = 100f;
+
+        [JsonProperty("lowShelfGain")]
+        public float LowShelfGain { get; set; }
+
+        [JsonProperty("lowShelfQ")]
+        public float LowShelfQ { get; set; } = 0.7f;
+
+        [JsonProperty("highShelfFrequency")]
+        public float HighShelfFrequency { get; set; } = 10000f;
+
+        [JsonProperty("highShelfGain")]
+        public float HighShelfGain { get; set; }
+
+        [JsonProperty("highShelfQ")]
+        public float HighShelfQ { get; set; } = 0.7f;
+
         [JsonProperty("hrtfIntensity")]
         public float HrtfIntensity { get; set; } = 1.0f;
 
@@ -429,19 +472,19 @@ public class PresetManager
     private static string GetDefaultPresetsJson() => """
     {
       "presets": [
-        { "id":"gaming","name":"游戏","description":"综合型：保留低频氛围 + 中高频定位，适合 3A/混合场景","eqBands":[3,4,1,0,-2,5,6,3,2,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.8,0.9,1.0,1.0,0.9,0.9,0.8,0.8,0.8,0.7],"hrtfIntensity":1.2,"surroundWidth":120,"bassBoost":1.4,"isFavorite":true,"isBuiltIn":true },
-        { "id":"movie","name":"电影","description":"电影型：增强环绕与低频，沉浸感优先","eqBands":[2,3,0,0,1,3,4,3,2,1],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.7,0.8,0.9,0.9,0.9,0.8,0.8,0.8,0.8,0.7],"hrtfIntensity":1.3,"surroundWidth":150,"bassBoost":1.5,"isFavorite":true,"isBuiltIn":true },
-        { "id":"competitive","name":"竞技精准","description":"竞技型：削低频、抬中高频，脚步/枪声突出，声场更宽","eqBands":[-3,-2,-2,1,3,5,4,2,0,-1],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.9,1.0,1.1,1.0,1.0,0.9,0.8,0.8,0.8,0.7],"hrtfIntensity":1.5,"surroundWidth":140,"bassBoost":0.7,"isFavorite":true,"isBuiltIn":true },
-        { "id":"vocal_male","name":"男声流行","description":"张国荣/周传雄/告五人；中低温暖、齿音克制","eqBands":[1,3,3,2,1,2,0,-1,-2,-1],"eqFrequencies":[40,80,160,315,630,1250,2500,5000,10000,16000],"eqQValues":[0.8,1.0,1.2,1.2,1.1,1.1,1.0,1.0,0.9,0.8],"hrtfIntensity":0.45,"surroundWidth":60,"bassBoost":1.0,"isFavorite":true,"isBuiltIn":true },
-        { "id":"vocal_female","name":"女声流行","description":"莫文蔚/邓丽君/邓紫棋；人声通透、空气感","eqBands":[-1,0,0,1,2,3,3,2,1,0],"eqFrequencies":[50,100,200,400,800,1600,3150,6300,12500,16000],"eqQValues":[0.8,1.0,1.2,1.2,1.2,1.2,1.1,1.0,0.9,0.8],"hrtfIntensity":0.45,"surroundWidth":60,"bassBoost":0.85,"isFavorite":true,"isBuiltIn":true },
-        { "id":"ballad_rnb","name":"抒情 R&B","description":"暖厚松弛；例：Stay With Me/Shape of My Heart/水星记","eqBands":[2,3,1,0,1,2,1,0,-1,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.7,0.9,1.0,1.0,1.0,1.0,0.9,0.9,0.8,0.7],"hrtfIntensity":0.55,"surroundWidth":70,"bassBoost":1.25,"isFavorite":true,"isBuiltIn":true },
-        { "id":"rock_indie","name":"摇滚独立","description":"鼓点有力、吉他颗粒；例：故乡/Yellow/Snow","eqBands":[3,3,1,0,-1,2,3,2,1,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.8,0.9,1.0,1.0,0.9,0.9,0.9,0.9,0.8,0.7],"hrtfIntensity":0.7,"surroundWidth":95,"bassBoost":1.3,"isFavorite":true,"isBuiltIn":true },
-        { "id":"metal","name":"金属","description":"低频紧、攻击性强；例：I Want My Tears Back/Du hast","eqBands":[1,0,-2,-2,-1,3,4,3,2,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.9,1.0,1.1,1.1,1.0,0.9,0.8,0.8,0.8,0.7],"hrtfIntensity":0.6,"surroundWidth":110,"bassBoost":1.1,"isFavorite":true,"isBuiltIn":true },
-        { "id":"dance_latin","name":"舞曲拉丁","description":"下潜深、节奏亮；例：Despacito/Good Time","eqBands":[4,3,0,-1,0,2,3,3,2,1],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.7,0.8,0.9,0.9,0.9,0.8,0.8,0.8,0.8,0.7],"hrtfIntensity":0.5,"surroundWidth":85,"bassBoost":1.6,"isFavorite":true,"isBuiltIn":true },
-        { "id":"symphonic","name":"交响史诗","description":"西幻交响、大动态；例：Journey of a Lifetime","eqBands":[2,2,0,0,0,1,2,2,3,3],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.6,0.7,0.8,0.8,0.8,0.8,0.8,0.8,0.8,0.8],"hrtfIntensity":0.65,"surroundWidth":130,"bassBoost":1.35,"isFavorite":true,"isBuiltIn":true },
-        { "id":"acoustic_acg","name":"原声 ACG","description":"指弹与日系；例：流行的云/Bad Angle","eqBands":[-1,-1,0,0,0,1,2,1,1,1],"eqFrequencies":[40,80,160,320,640,1280,2500,5000,10000,16000],"eqQValues":[0.6,0.7,0.7,0.8,0.8,0.8,0.8,0.8,0.8,0.8],"hrtfIntensity":0.35,"surroundWidth":55,"bassBoost":0.9,"isFavorite":true,"isBuiltIn":true },
-        { "id":"flat","name":"平坦","description":"参考型：全频段平直，不做调味","eqBands":[0,0,0,0,0,0,0,0,0,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[1,1,1,1,1,1,1,1,1,1],"hrtfIntensity":1.0,"surroundWidth":100,"bassBoost":1.0,"isFavorite":false,"isBuiltIn":true },
-        { "id":"custom","name":"自定义","description":"个人定制预设","eqBands":[0,0,0,0,0,0,0,0,0,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[1,1,1,1,1,1,1,1,1,1],"hrtfIntensity":1.0,"surroundWidth":100,"bassBoost":1.0,"isFavorite":false,"isBuiltIn":false }
+        {"id":"gaming","name":"游戏","description":"综合型：保留低频氛围 + 中高频定位，适合 3A/混合场景","eqBands":[3,4,1,0,-2,5,6,3,2,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[1.0,1.1,1.2,1.1,1.0,1.0,0.9,0.9,0.9,0.8],"lowShelfFrequency":90,"lowShelfGain":3.5,"lowShelfQ":0.7,"highShelfFrequency":10000,"highShelfGain":1.5,"highShelfQ":0.7,"hrtfIntensity":1.2,"surroundWidth":120,"bassBoost":1.4,"isFavorite":true,"isBuiltIn":true},
+        {"id":"movie","name":"电影","description":"电影型：增强环绕与低频，沉浸感优先","eqBands":[2,3,0,0,1,3,4,3,2,1],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.8,0.9,1.0,1.0,0.9,0.9,0.9,0.9,0.8,0.7],"lowShelfFrequency":80,"lowShelfGain":4.5,"lowShelfQ":0.7,"highShelfFrequency":10000,"highShelfGain":2.0,"highShelfQ":0.7,"hrtfIntensity":1.3,"surroundWidth":150,"bassBoost":1.5,"isFavorite":true,"isBuiltIn":true},
+        {"id":"competitive","name":"竞技精准","description":"竞技型：削低频、抬中高频，脚步/枪声突出，声场更宽","eqBands":[-3,-2,-2,1,3,5,4,2,0,-1],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[1.1,1.2,1.2,1.1,1.0,1.0,0.9,0.9,0.8,0.7],"lowShelfFrequency":100,"lowShelfGain":-2.0,"lowShelfQ":0.7,"highShelfFrequency":8000,"highShelfGain":2.0,"highShelfQ":0.8,"hrtfIntensity":1.5,"surroundWidth":140,"bassBoost":0.7,"isFavorite":true,"isBuiltIn":true},
+        {"id":"vocal_male","name":"男声流行","description":"张国荣/周传雄/告五人；中低温暖、齿音克制","eqBands":[1,3,3,2,1,2,0,-1,-2,-1],"eqFrequencies":[40,80,160,315,630,1250,2500,5000,10000,16000],"eqQValues":[0.8,1.0,1.4,1.4,1.3,1.2,1.1,1.0,0.9,0.8],"lowShelfFrequency":120,"lowShelfGain":1.5,"lowShelfQ":0.6,"highShelfFrequency":9000,"highShelfGain":-1.0,"highShelfQ":0.6,"hrtfIntensity":0.45,"surroundWidth":60,"bassBoost":1.0,"isFavorite":true,"isBuiltIn":true},
+        {"id":"vocal_female","name":"女声流行","description":"莫文蔚/邓丽君/邓紫棋；人声通透、空气感","eqBands":[-1,0,0,1,2,3,3,2,1,0],"eqFrequencies":[50,100,200,400,800,1600,3150,6300,12500,16000],"eqQValues":[0.8,1.0,1.4,1.4,1.4,1.4,1.2,1.1,1.0,0.8],"lowShelfFrequency":120,"lowShelfGain":-1.0,"lowShelfQ":0.6,"highShelfFrequency":9000,"highShelfGain":1.0,"highShelfQ":0.6,"hrtfIntensity":0.45,"surroundWidth":60,"bassBoost":0.85,"isFavorite":true,"isBuiltIn":true},
+        {"id":"ballad_rnb","name":"抒情 R&B","description":"暖厚松弛；例：Stay With Me/Shape of My Heart/水星记","eqBands":[2,3,1,0,1,2,1,0,-1,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.8,1.0,1.1,1.1,1.1,1.1,1.0,0.9,0.8,0.7],"lowShelfFrequency":100,"lowShelfGain":2.5,"lowShelfQ":0.65,"highShelfFrequency":9000,"highShelfGain":0.5,"highShelfQ":0.6,"hrtfIntensity":0.55,"surroundWidth":70,"bassBoost":1.25,"isFavorite":true,"isBuiltIn":true},
+        {"id":"rock_indie","name":"摇滚独立","description":"鼓点有力、吉他颗粒；例：故乡/Yellow/Snow","eqBands":[3,3,1,0,-1,2,3,2,1,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.9,1.0,1.1,1.0,1.0,1.0,1.0,1.0,0.9,0.8],"lowShelfFrequency":90,"lowShelfGain":3.0,"lowShelfQ":0.7,"highShelfFrequency":9500,"highShelfGain":1.0,"highShelfQ":0.6,"hrtfIntensity":0.7,"surroundWidth":95,"bassBoost":1.3,"isFavorite":true,"isBuiltIn":true},
+        {"id":"metal","name":"金属","description":"低频紧、攻击性强；例：I Want My Tears Back/Du hast","eqBands":[1,0,-2,-2,-1,3,4,3,2,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[1.0,1.1,1.3,1.3,1.2,1.0,0.9,0.9,0.8,0.7],"lowShelfFrequency":90,"lowShelfGain":1.0,"lowShelfQ":0.8,"highShelfFrequency":8000,"highShelfGain":1.0,"highShelfQ":0.6,"hrtfIntensity":0.6,"surroundWidth":110,"bassBoost":1.1,"isFavorite":true,"isBuiltIn":true},
+        {"id":"dance_latin","name":"舞曲拉丁","description":"下潜深、节奏亮；例：Despacito/Good Time","eqBands":[4,3,0,-1,0,2,3,3,2,1],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.7,0.9,1.0,1.0,1.0,0.9,0.9,0.9,0.8,0.7],"lowShelfFrequency":80,"lowShelfGain":4.0,"lowShelfQ":0.7,"highShelfFrequency":10000,"highShelfGain":2.0,"highShelfQ":0.7,"hrtfIntensity":0.5,"surroundWidth":85,"bassBoost":1.6,"isFavorite":true,"isBuiltIn":true},
+        {"id":"symphonic","name":"交响史诗","description":"西幻交响、大动态；例：Journey of a Lifetime","eqBands":[2,2,0,0,0,1,2,2,3,3],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[0.6,0.7,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.8],"lowShelfFrequency":90,"lowShelfGain":2.0,"lowShelfQ":0.6,"highShelfFrequency":11000,"highShelfGain":2.0,"highShelfQ":0.7,"hrtfIntensity":0.65,"surroundWidth":130,"bassBoost":1.35,"isFavorite":true,"isBuiltIn":true},
+        {"id":"acoustic_acg","name":"原声 ACG","description":"指弹与日系；例：流行的云/Bad Angle","eqBands":[-1,-1,0,0,0,1,2,1,1,1],"eqFrequencies":[40,80,160,320,640,1280,2500,5000,10000,16000],"eqQValues":[0.7,0.8,0.8,0.9,0.9,0.9,0.9,0.9,0.9,0.8],"lowShelfFrequency":120,"lowShelfGain":-0.5,"lowShelfQ":0.6,"highShelfFrequency":9000,"highShelfGain":0.5,"highShelfQ":0.6,"hrtfIntensity":0.35,"surroundWidth":55,"bassBoost":0.9,"isFavorite":true,"isBuiltIn":true},
+        {"id":"flat","name":"平坦","description":"参考型：全频段平直，不做调味","eqBands":[0,0,0,0,0,0,0,0,0,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[1,1,1,1,1,1,1,1,1,1],"lowShelfFrequency":100,"lowShelfGain":0.0,"lowShelfQ":0.7,"highShelfFrequency":10000,"highShelfGain":0.0,"highShelfQ":0.7,"hrtfIntensity":1.0,"surroundWidth":100,"bassBoost":1.0,"isFavorite":false,"isBuiltIn":true},
+        {"id":"custom","name":"自定义","description":"个人定制预设","eqBands":[0,0,0,0,0,0,0,0,0,0],"eqFrequencies":[32,64,125,250,500,1000,2000,4000,8000,16000],"eqQValues":[1,1,1,1,1,1,1,1,1,1],"lowShelfFrequency":100,"lowShelfGain":0.0,"lowShelfQ":0.7,"highShelfFrequency":10000,"highShelfGain":0.0,"highShelfQ":0.7,"hrtfIntensity":1.0,"surroundWidth":100,"bassBoost":1.0,"isFavorite":false,"isBuiltIn":false}
       ]
     }
     """;

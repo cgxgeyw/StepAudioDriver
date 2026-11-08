@@ -33,11 +33,11 @@ New-Item -ItemType Directory -Force $installerDir | Out-Null
 
 & $wix build (Join-Path $PSScriptRoot 'StepAudioDriver.wxs') `
     -arch x64 `
-    -o (Join-Path $installerDir 'StepAudioDriver-1.2.0.msi')
+    -o (Join-Path $installerDir 'StepAudioDriver-1.3.0.msi')
 
-$msi = Join-Path $installerDir 'StepAudioDriver-1.2.0.msi'
+$msi = Join-Path $installerDir 'StepAudioDriver-1.3.0.msi'
 $hash = (Get-FileHash $msi -Algorithm SHA256).Hash
-"$hash  StepAudioDriver-1.2.0.msi" |
-    Set-Content (Join-Path $installerDir 'StepAudioDriver-1.2.0.sha256') -Encoding ASCII
+"$hash  StepAudioDriver-1.3.0.msi" |
+    Set-Content (Join-Path $installerDir 'StepAudioDriver-1.3.0.sha256') -Encoding ASCII
 
 Write-Host "MSI: $msi"

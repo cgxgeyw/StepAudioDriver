@@ -37,6 +37,16 @@ public class Preset
     /// </summary>
     public float[] EQQValues { get; set; } = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
+    /// <summary>低频搁架</summary>
+    public float LowShelfFrequency { get; set; } = 100f;
+    public float LowShelfGain { get; set; }
+    public float LowShelfQ { get; set; } = 0.7f;
+
+    /// <summary>高频搁架</summary>
+    public float HighShelfFrequency { get; set; } = 10000f;
+    public float HighShelfGain { get; set; }
+    public float HighShelfQ { get; set; } = 0.7f;
+
     /// <summary>
     /// HRTF 强度 (0.5 - 2.0)
     /// 控制 7.1 虚拟化的强度
@@ -97,6 +107,12 @@ public class Preset
             EQBands = (float[])EQBands.Clone(),
             EQFrequencies = (float[])EQFrequencies.Clone(),
             EQQValues = (float[])EQQValues.Clone(),
+            LowShelfFrequency = LowShelfFrequency,
+            LowShelfGain = LowShelfGain,
+            LowShelfQ = LowShelfQ,
+            HighShelfFrequency = HighShelfFrequency,
+            HighShelfGain = HighShelfGain,
+            HighShelfQ = HighShelfQ,
             HRTFIntensity = HRTFIntensity,
             SurroundWidth = SurroundWidth,
             BassBoost = BassBoost,
@@ -114,6 +130,12 @@ public class Preset
         Array.Clear(EQBands);
         EQFrequencies = new float[] { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 };
         EQQValues = new float[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+        LowShelfFrequency = 100f;
+        LowShelfGain = 0f;
+        LowShelfQ = 0.7f;
+        HighShelfFrequency = 10000f;
+        HighShelfGain = 0f;
+        HighShelfQ = 0.7f;
         HRTFIntensity = 1.0f;
         SurroundWidth = 100f;
         BassBoost = 1.0f;
