@@ -44,7 +44,7 @@
 从 [Releases](https://github.com/cgxgeyw/StepAudioDriver/releases/latest) 下载：
 
 ```
-StepAudioDriver-1.6.0.msi
+StepAudioDriver-1.7.0.msi
 ```
 
 双击安装即可。安装范围为当前用户，目录：

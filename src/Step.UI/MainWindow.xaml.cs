@@ -2193,7 +2193,9 @@ public partial class MainWindow : Window
             {
                 Width = size,
                 Height = size,
-                Fill = active || hover ? accent : surface,
+                Fill = active || hover
+                    ? new SolidColorBrush(Color.FromArgb(70, accent.Color.R, accent.Color.G, accent.Color.B))
+                    : Brushes.Transparent,
                 Stroke = accent,
                 StrokeThickness = active ? 2.5 : 1.6,
                 IsHitTestVisible = false

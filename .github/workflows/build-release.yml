@@ -34,6 +34,6 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           gh release upload $env:TAG `
-            artifacts/installer/StepAudioDriver-1.6.0.msi `
-            artifacts/installer/StepAudioDriver-1.6.0.sha256 `
+            artifacts/installer/StepAudioDriver-1.7.0.msi `
+            artifacts/installer/StepAudioDriver-1.7.0.sha256 `
             --clobber

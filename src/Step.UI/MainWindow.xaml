@@ -615,7 +615,7 @@
               <Grid Margin="0,0,0,4">
                 <TextBlock Name="CurveHint" Text="拖动曲线控制点同时调整频率与增益，双击单段复位"
                            FontSize="11.5" Foreground="{StaticResource BrText3}"/>
-                <TextBlock Text="频率 Hz   ·   增益 dB   ·   Q" HorizontalAlignment="Right"
+                <TextBlock Text="频率 Hz   ·   增益 dB   ·   Q（越大越尖）" HorizontalAlignment="Right"
                            FontSize="11.5" Foreground="{StaticResource BrText3}"/>
               </Grid>
               <Grid Name="BandStrip"/>
