@@ -1,27 +1,21 @@
 namespace Step.Core.Audio.DSP;
 
 /// <summary>
-/// 10 段参数化均衡器引擎
-///
-/// 每段是一个 RBJ peaking biquad，级联处理。
-/// 系数由 UI 线程更新（构建新的不可变快照后原子替换），
-/// 音频线程每块只读取一次快照，避免处理过程中系数被改写。
-/// 立体声的两个声道各自维护滤波器状态，不会互相污染。
+/// 参数化均衡器引擎，最多 15 段。
+/// 默认 10 段；自定义预设可切换到 15 段精准模式。
 /// </summary>
 public class EqualizerEngine
 {
-    /// <summary>
-    /// EQ 频段数
-    /// </summary>
-    public const int BandCount = 10;
+    public const int MaxBandCount = 15;
+    public const int DefaultBandCount = 10;
 
-    /// <summary>
-    /// 默认中心频率 (Hz)，与 UI 滑块一致
-    /// </summary>
     private static readonly float[] DefaultCenterFrequencies =
     {
-        32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000
+        32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000,
+        2500, 6300, 10000, 12500, 16000
     };
+
+    private int _activeBandCount = DefaultBandCount;
 
     private const float DefaultQ = 1.0f;
     private const float MinQ = 0.5f;
@@ -30,8 +24,8 @@ public class EqualizerEngine
     private const float MaxGainDb = 12f;
 
     private readonly float[] _centerFrequencies = (float[])DefaultCenterFrequencies.Clone();
-    private readonly float[] _qFactors = Enumerable.Repeat(DefaultQ, BandCount).ToArray();
-    private readonly float[] _bandGains = new float[BandCount];
+    private readonly float[] _qFactors = Enumerable.Repeat(DefaultQ, MaxBandCount).ToArray();
+    private readonly float[] _bandGains = new float[MaxBandCount];
 
     private float _lowShelfFrequency = 100f;
     private float _lowShelfGainDb;
@@ -60,8 +54,8 @@ public class EqualizerEngine
 
     public EqualizerEngine()
     {
-        _delayLeft = Enumerable.Range(0, BandCount).Select(_ => new DelayLine()).ToArray();
-        _delayRight = Enumerable.Range(0, BandCount).Select(_ => new DelayLine()).ToArray();
+        _delayLeft = Enumerable.Range(0, MaxBandCount).Select(_ => new DelayLine()).ToArray();
+        _delayRight = Enumerable.Range(0, MaxBandCount).Select(_ => new DelayLine()).ToArray();
         _coefficients = BuildCoefficients();
         RebuildShelfCoefficients();
     }
@@ -131,12 +125,16 @@ public class EqualizerEngine
     /// </summary>
     public void SetAllBands(float[] gains, float[] frequencies, float[] qFactors)
     {
-        if (gains.Length != BandCount || frequencies.Length != BandCount || qFactors.Length != BandCount)
-            throw new ArgumentException($"数组长度必须为 {BandCount}");
+        if (gains.Length != frequencies.Length || gains.Length != qFactors.Length)
+            throw new ArgumentException("三个数组长度必须一致");
 
+        if (gains.Length is not (DefaultBandCount or MaxBandCount))
+            throw new ArgumentException($"数组长度必须为 {DefaultBandCount} 或 {MaxBandCount}");
+
+        _activeBandCount = gains.Length;
         float nyquist = _sampleRate / 2f;
 
-        for (int i = 0; i < BandCount; i++)
+        for (int i = 0; i < _activeBandCount; i++)
         {
             _bandGains[i] = Math.Clamp(gains[i], MinGainDb, MaxGainDb);
             _centerFrequencies[i] = Math.Clamp(frequencies[i], 20f, nyquist * 0.9f);
@@ -172,8 +170,8 @@ public class EqualizerEngine
         _highShelfCoefficients = ComputeHighShelf(_highShelfFrequency, _highShelfGainDb, _highShelfQ);
     }
 
-    public float LowShelfFrequency => _lowShelfFrequency;
-    public float LowShelfGainDb => _lowShelfGainDb;
+    public int ActiveBandCount => _activeBandCount;
+    public float LowShelfFrequency => _lowShelfFrequency;    public float LowShelfGainDb => _lowShelfGainDb;
     public float LowShelfQ => _lowShelfQ;
     public float HighShelfFrequency => _highShelfFrequency;
     public float HighShelfGainDb => _highShelfGainDb;
@@ -201,7 +199,7 @@ public class EqualizerEngine
 
             double magnitude = 1.0;
 
-            for (int band = 0; band < BandCount; band++)
+            for (int band = 0; band < _activeBandCount; band++)
                 magnitude *= CoefficientMagnitude(coefficients[band], cos1, sin1, cos2, sin2);
 
             magnitude *= CoefficientMagnitude(lowShelf, cos1, sin1, cos2, sin2);
@@ -231,10 +229,10 @@ public class EqualizerEngine
     /// </summary>
     public void SetAllBandGains(float[] gains)
     {
-        if (gains.Length != BandCount)
-            throw new ArgumentException($"增益数组长度必须为 {BandCount}", nameof(gains));
+        if (gains.Length != _activeBandCount && gains.Length != MaxBandCount)
+            throw new ArgumentException($"增益数组长度必须为 {_activeBandCount} 或 {MaxBandCount}", nameof(gains));
 
-        for (int i = 0; i < BandCount; i++)
+        for (int i = 0; i < _activeBandCount; i++)
         {
             _bandGains[i] = Math.Clamp(gains[i], MinGainDb, MaxGainDb);
         }
@@ -302,7 +300,7 @@ public class EqualizerEngine
             float left = input[i];
             float right = stride == 2 ? input[i + 1] : 0f;
 
-            for (int band = 0; band < BandCount; band++)
+            for (int band = 0; band < _activeBandCount; band++)
             {
                 left = ApplyBiquadFilter(left, coefficients[band], leftStates[band]);
                 if (stride == 2)
@@ -353,9 +351,9 @@ public class EqualizerEngine
     /// </summary>
     private float[][] BuildCoefficients()
     {
-        var snapshot = new float[BandCount][];
+        var snapshot = new float[_activeBandCount][];
 
-        for (int i = 0; i < BandCount; i++)
+        for (int i = 0; i < _activeBandCount; i++)
         {
             snapshot[i] = ComputePeakingEq(_centerFrequencies[i], _bandGains[i], _qFactors[i]);
         }
@@ -460,7 +458,7 @@ public class EqualizerEngine
 
     private static void ValidateBand(int bandIndex)
     {
-        if (bandIndex < 0 || bandIndex >= BandCount)
+        if (bandIndex < 0 || bandIndex >= MaxBandCount)
             throw new ArgumentOutOfRangeException(nameof(bandIndex));
     }
 

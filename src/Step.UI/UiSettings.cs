@@ -13,6 +13,7 @@ public sealed class UiSettings
     public double[]? EqFrequencies { get; set; }
     public double[]? EqQValues { get; set; }
 
+    public bool? PrecisionEq { get; set; }
     public bool? HrtfEnabled { get; set; }
     public double? HrtfIntensity { get; set; }
     public double? SurroundWidth { get; set; }

@@ -53,17 +53,22 @@ public partial class MainWindow : Window
     private string? _managedCaptureDeviceId;
     private bool _defaultDeviceManagedByApp;
     private int _bufferMilliseconds = 100;
+    private bool _syncingBuffer;
     private float _volumeLevel = 1.0f;
 
-    private readonly double[] _eqBands = new double[10];
-    private readonly double[] _eqFrequencies = { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 };
-    private readonly double[] _eqQValues = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+    private readonly double[] _eqBands = new double[15];
+    private readonly double[] _eqFrequencies =
+        { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 2500, 6300, 10000, 12500, 16000 };
+    private readonly double[] _eqQValues =
+        { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+    private int _bandCount = 10;
+    private bool _precisionEq;
 
-    // 频段控制条（代码生成，保证 10 列上下严格对齐）
-    private readonly Slider[] _eqSliders = new Slider[10];
-    private readonly TextBox[] _eqFreqBoxes = new TextBox[10];
-    private readonly TextBox[] _eqDbBoxes = new TextBox[10];
-    private readonly TextBox[] _eqQBoxes = new TextBox[10];
+    // 频段控制条（代码生成，保证 10/15 列上下严格对齐）
+    private readonly Slider[] _eqSliders = new Slider[15];
+    private readonly TextBox[] _eqFreqBoxes = new TextBox[15];
+    private readonly TextBox[] _eqDbBoxes = new TextBox[15];
+    private readonly TextBox[] _eqQBoxes = new TextBox[15];
 
     private double _lowShelfFrequency = 100;
     private double _lowShelfGain;
@@ -643,6 +648,13 @@ public partial class MainWindow : Window
                     DispatcherPriority.Loaded);
             }
 
+            if (Environment.GetCommandLineArgs().Any(a => a == "--ui-precision") &&
+                _presetManager?.GetPreset("custom") is { } customPreset)
+            {
+                ApplyPreset(customPreset);
+                ChkPrecisionEq.IsChecked = true;
+            }
+
             if (Environment.GetCommandLineArgs().Any(a => a == "--ui-overlay"))
                 ChkDirectionOverlay.IsChecked = true;
 
@@ -1039,11 +1051,18 @@ public partial class MainWindow : Window
     /// </summary>
     private void ApplyRuntimeSettings(RealTimeAudioProcessor processor)
     {
-        for (int i = 0; i < 10; i++)
+        var gains = new float[_bandCount];
+        var freqs = new float[_bandCount];
+        var qs = new float[_bandCount];
+
+        for (int i = 0; i < _bandCount; i++)
         {
-            processor.SetEQBandParameters(i, (float)_eqFrequencies[i], (float)_eqQValues[i]);
-            processor.SetEQBandGain(i, (float)_eqBands[i]);
+            gains[i] = (float)_eqBands[i];
+            freqs[i] = (float)_eqFrequencies[i];
+            qs[i] = (float)_eqQValues[i];
         }
+
+        processor.SetAllBands(gains, freqs, qs);
 
         processor.SetLowShelf((float)_lowShelfFrequency, (float)_lowShelfGain, (float)_lowShelfQ);
         processor.SetHighShelf((float)_highShelfFrequency, (float)_highShelfGain, (float)_highShelfQ);
@@ -1456,26 +1475,34 @@ public partial class MainWindow : Window
 
             _syncingBandUi = true;
 
-            // 预设自己的频率/Q，而不是沿用上一个预设
-            for (int i = 0; i < 10; i++)
+            int newBandCount = preset.UsePrecisionEq && !preset.IsBuiltIn ? 15 : 10;
+            _precisionEq = newBandCount == 15;
+
+            if (_bandCount != newBandCount)
             {
-                if (preset.EQFrequencies is { Length: 10 })
+                _bandCount = newBandCount;
+                BuildBandStrip();
+            }
+
+            for (int i = 0; i < 15; i++)
+            {
+                if (preset.EQFrequencies is { Length: > 0 } && i < preset.EQFrequencies.Length)
                     _eqFrequencies[i] = Math.Clamp(preset.EQFrequencies[i], 20, 20000);
 
-                if (preset.EQQValues is { Length: 10 })
+                if (preset.EQQValues is { Length: > 0 } && i < preset.EQQValues.Length)
                     _eqQValues[i] = Math.Clamp(preset.EQQValues[i], 0.5, 10);
 
+                if (preset.EQBands is { Length: > 0 } && i < preset.EQBands.Length)
+                    _eqBands[i] = Math.Clamp(preset.EQBands[i], -12, 12);
+            }
+
+            for (int i = 0; i < 15; i++)
+            {
                 if (_eqFreqBoxes[i] != null)
                     _eqFreqBoxes[i].Text = _eqFrequencies[i].ToString("0");
 
                 if (_eqQBoxes[i] != null)
                     _eqQBoxes[i].Text = _eqQValues[i].ToString("0.0");
-            }
-
-            // BassBoost 旧字段不再叠加，低频由 32/64 段和低频搁架控制
-            for (int i = 0; i < 10; i++)
-            {
-                _eqBands[i] = Math.Clamp(preset.EQBands[i], -12, 12);
 
                 if (_eqSliders[i] != null)
                     _eqSliders[i].Value = _eqBands[i];
@@ -1483,6 +1510,8 @@ public partial class MainWindow : Window
                 if (_eqDbBoxes[i] != null)
                     _eqDbBoxes[i].Text = _eqBands[i].ToString("0.0");
             }
+
+            ChkPrecisionEq.IsChecked = _precisionEq;
 
             _lowShelfFrequency = Math.Clamp(preset.LowShelfFrequency, 20, 20000);
             _lowShelfGain = Math.Clamp(preset.LowShelfGain, -12, 12);
@@ -1558,9 +1587,11 @@ public partial class MainWindow : Window
         BtnResetEQ.IsEnabled = editable;
 
         LockHint.Visibility = editable ? Visibility.Collapsed : Visibility.Visible;
+        ChkPrecisionEq.Visibility = editable ? Visibility.Visible : Visibility.Collapsed;
+        ChkPrecisionEq.IsChecked = _precisionEq;
 
         CurveHint.Text = editable
-            ? "曲线为 10 段 + 搁架总响应；拖动控制点调整该段频率/增益"
+            ? $"曲线为 {_bandCount} 段 + 搁架总响应；拖动控制点调整该段频率/增益"
             : "内置预设只读，切换到「自定义」后可调整";
     }
 
@@ -1568,8 +1599,84 @@ public partial class MainWindow : Window
 
     #region 均衡器
 
+    private static readonly double[] LegacyFrequencies =
+        { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 };
+
+    private static readonly double[] PrecisionFrequencies =
+        { 25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000 };
+
+    private void ChkPrecisionEq_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_syncingBandUi || !IsCurrentPresetEditable())
+            return;
+
+        bool usePrecision = ChkPrecisionEq.IsChecked == true;
+
+        if (usePrecision == _precisionEq)
+            return;
+
+        if (usePrecision)
+            ConvertEqBands(LegacyFrequencies, 10, PrecisionFrequencies, 15);
+        else
+            ConvertEqBands(PrecisionFrequencies, 15, LegacyFrequencies, 10);
+
+        _precisionEq = usePrecision;
+        _bandCount = usePrecision ? 15 : 10;
+
+        _syncingBandUi = true;
+        BuildBandStrip();
+
+        for (int i = 0; i < _bandCount; i++)
+        {
+            if (_eqSliders[i] != null) _eqSliders[i].Value = _eqBands[i];
+            if (_eqDbBoxes[i] != null) _eqDbBoxes[i].Text = _eqBands[i].ToString("0.0");
+            if (_eqFreqBoxes[i] != null) _eqFreqBoxes[i].Text = _eqFrequencies[i].ToString("0");
+            if (_eqQBoxes[i] != null) _eqQBoxes[i].Text = _eqQValues[i].ToString("0.0");
+        }
+
+        _syncingBandUi = false;
+
+        UpdateCurveEngine();
+        if (_audioProcessor != null)
+            ApplyRuntimeSettings(_audioProcessor);
+        DrawEQCurve();
+        UpdatePresetEditability();
+    }
+
+    private void ConvertEqBands(double[] sourceFrequencies, int sourceCount,
+        double[] targetFrequencies, int targetCount)
+    {
+        var sourceGains = new double[sourceCount];
+        var sourceQs = new double[sourceCount];
+        var sourceFreqs = new double[sourceCount];
+        Array.Copy(_eqBands, sourceGains, sourceCount);
+        Array.Copy(_eqQValues, sourceQs, sourceCount);
+        Array.Copy(_eqFrequencies, sourceFreqs, sourceCount);
+
+        for (int i = 0; i < targetCount; i++)
+        {
+            double freq = targetFrequencies[i];
+            int upper = 1;
+
+            while (upper < sourceCount - 1 && sourceFreqs[upper] < freq)
+                upper++;
+
+            int lower = Math.Max(0, upper - 1);
+            double f0 = sourceFreqs[lower];
+            double f1 = sourceFreqs[upper];
+            double t = f1 > f0
+                ? Math.Clamp((Math.Log10(freq) - Math.Log10(f0)) /
+                             (Math.Log10(f1) - Math.Log10(f0)), 0, 1)
+                : 0;
+
+            _eqFrequencies[i] = freq;
+            _eqBands[i] = sourceGains[lower] + (sourceGains[upper] - sourceGains[lower]) * t;
+            _eqQValues[i] = sourceQs[lower] + (sourceQs[upper] - sourceQs[lower]) * t;
+        }
+    }
+
     /// <summary>
-    /// 生成 10 列频段控制条：频率 / 垂直滑块 / 增益 / Q 严格同列对齐
+    /// 生成 10/15 列频段控制条：频率 / 垂直滑块 / 增益 / Q 严格同列对齐
     /// </summary>
     private void BuildBandStrip()
     {
@@ -1577,8 +1684,14 @@ public partial class MainWindow : Window
         BandStrip.ColumnDefinitions.Clear();
         BandStrip.RowDefinitions.Clear();
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < _bandCount; i++)
             BandStrip.ColumnDefinitions.Add(new ColumnDefinition());
+
+        bool compact = _bandCount > 10;
+        double boxWidth = compact ? 62 : 72;
+        double qWidth = compact ? 42 : 58;
+        double sliderWidth = compact ? 18 : 28;
+        double boxFont = compact ? 10 : 12;
 
         BandStrip.RowDefinitions.Add(new RowDefinition { Height = new GridLength(30) });
         BandStrip.RowDefinitions.Add(new RowDefinition { Height = new GridLength(150) });
@@ -1589,7 +1702,7 @@ public partial class MainWindow : Window
         var sliderStyle = (Style)FindResource("VSlider");
         var textMuted = (SolidColorBrush)FindResource("BrText3");
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < _bandCount; i++)
         {
             int band = i;
 
@@ -1597,7 +1710,9 @@ public partial class MainWindow : Window
             {
                 Style = numericStyle,
                 Text = _eqFrequencies[i].ToString("0"),
-                Width = 72,
+                Width = boxWidth,
+                FontSize = boxFont,
+                Padding = compact ? new Thickness(1, 0, 1, 0) : new Thickness(8, 4, 8, 4),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = "中心频率 (Hz)"
@@ -1617,7 +1732,7 @@ public partial class MainWindow : Window
                 Minimum = -12,
                 Maximum = 12,
                 Value = _eqBands[i],
-                Width = 28,
+                Width = sliderWidth,
                 Margin = new Thickness(0, 2, 0, 2),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Stretch,
@@ -1629,7 +1744,9 @@ public partial class MainWindow : Window
             {
                 Style = numericStyle,
                 Text = _eqBands[i].ToString("0.0"),
-                Width = 72,
+                Width = boxWidth,
+                FontSize = boxFont,
+                Padding = compact ? new Thickness(1, 0, 1, 0) : new Thickness(8, 4, 8, 4),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 ToolTip = "增益 (dB)"
@@ -1646,9 +1763,10 @@ public partial class MainWindow : Window
             {
                 Style = numericStyle,
                 Text = _eqQValues[i].ToString("0.0"),
-                Width = 58,
+                Width = qWidth,
                 Height = 26,
-                FontSize = 12,
+                FontSize = boxFont,
+                Padding = compact ? new Thickness(1, 0, 1, 0) : new Thickness(8, 4, 8, 4),
                 Foreground = textMuted,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -1838,15 +1956,15 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 把当前 10 段参数同步到用于画曲线的引擎
+    /// 把当前 EQ 参数同步到用于画曲线的引擎
     /// </summary>
     private void UpdateCurveEngine()
     {
-        var gains = new float[10];
-        var freqs = new float[10];
-        var qs = new float[10];
+        var gains = new float[_bandCount];
+        var freqs = new float[_bandCount];
+        var qs = new float[_bandCount];
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < _bandCount; i++)
         {
             gains[i] = (float)_eqBands[i];
             freqs[i] = (float)_eqFrequencies[i];
@@ -1873,7 +1991,7 @@ public partial class MainWindow : Window
         }
 
         double lower = band == 0 ? 20 : _eqFrequencies[band - 1] * 1.03;
-        double upper = band == 9 ? 20000 : _eqFrequencies[band + 1] / 1.03;
+        double upper = band == _bandCount - 1 ? 20000 : _eqFrequencies[band + 1] / 1.03;
 
         freq = Math.Clamp(freq, Math.Max(20, lower), Math.Min(20000, upper));
         _eqFrequencies[band] = freq;
@@ -2030,7 +2148,7 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// 该频点的总响应（10 段 + 两个搁架的叠加），控制点画在这里才能落在曲线上。
+    /// 该频点的总响应（当前段数 + 两个搁架的叠加），控制点画在这里才能落在曲线上。
     /// </summary>
     private double TotalResponseAt(double frequency)
     {
@@ -2174,7 +2292,7 @@ public partial class MainWindow : Window
         });
 
         // 控制点
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < _bandCount; i++)
         {
             double x = FrequencyToX(_eqFrequencies[i], left, plotWidth);
             double y = GainToY(
@@ -2245,7 +2363,7 @@ public partial class MainWindow : Window
 
         var (left, top, plotWidth, plotHeight) = GetPlotRegion();
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < _bandCount; i++)
         {
             double x = FrequencyToX(_eqFrequencies[i], left, plotWidth);
             double y = GainToY(
@@ -2325,7 +2443,7 @@ public partial class MainWindow : Window
         double frequency = XToFrequency(position.X, left, plotWidth);
 
         double lower = band == 0 ? 20 : _eqFrequencies[band - 1] * 1.03;
-        double upper = band == 9 ? 20000 : _eqFrequencies[band + 1] / 1.03;
+        double upper = band == _bandCount - 1 ? 20000 : _eqFrequencies[band + 1] / 1.03;
 
         _selectedBand = band;
         _eqBands[band] = gain;
@@ -2902,23 +3020,97 @@ public partial class MainWindow : Window
 
     private void PopulateBufferModes()
     {
+        _syncingBuffer = true;
         BufferModeComboBox.Items.Clear();
         BufferModeComboBox.Items.Add(new ComboBoxItem { Content = "稳定（100 ms，推荐）", Tag = 100 });
         BufferModeComboBox.Items.Add(new ComboBoxItem { Content = "平衡（60 ms）", Tag = 60 });
         BufferModeComboBox.Items.Add(new ComboBoxItem { Content = "低延迟（40 ms）", Tag = 40 });
+        BufferModeComboBox.Items.Add(new ComboBoxItem { Content = "自定义（10–300 ms）", Tag = -1 });
         BufferModeComboBox.SelectedIndex = 0;
+        BufferSlider.Value = 100;
+        BufferValueText.Text = "100 ms";
+        _syncingBuffer = false;
     }
 
     private void BufferModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (_syncingBuffer)
+            return;
+
         if (BufferModeComboBox.SelectedItem is ComboBoxItem item &&
-            int.TryParse(item.Tag?.ToString(), out int milliseconds))
+            int.TryParse(item.Tag?.ToString(), out int milliseconds) &&
+            milliseconds > 0)
         {
-            _bufferMilliseconds = milliseconds;
+            SetBufferMilliseconds(milliseconds, updateCombo: false);
         }
 
         if (_audioProcessor != null)
             StatusText.ToolTip = "缓冲档位已改变，停止后重新启动音频即可生效";
+    }
+
+    private void BufferSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (_syncingBuffer || BufferValueText == null)
+            return;
+
+        SetBufferMilliseconds((int)Math.Round(e.NewValue), updateCombo: true);
+    }
+
+    private void SetBufferMilliseconds(int milliseconds, bool updateCombo)
+    {
+        _bufferMilliseconds = Math.Clamp(milliseconds, 10, 300);
+
+        _syncingBuffer = true;
+        BufferSlider.Value = _bufferMilliseconds;
+        BufferValueText.Text = $"{_bufferMilliseconds} ms";
+
+        if (updateCombo)
+        {
+            foreach (ComboBoxItem item in BufferModeComboBox.Items)
+            {
+                if (item.Tag?.ToString() == "-1")
+                {
+                    BufferModeComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        _syncingBuffer = false;
+
+        if (_audioProcessor != null)
+            StatusText.ToolTip = "缓冲已改变，停止后重新启动音频即可生效";
+    }
+
+    private void RestoreBufferMilliseconds(int milliseconds)
+    {
+        milliseconds = Math.Clamp(milliseconds, 10, 300);
+
+        foreach (ComboBoxItem item in BufferModeComboBox.Items)
+        {
+            if (int.TryParse(item.Tag?.ToString(), out int tag) && tag == milliseconds)
+            {
+                _syncingBuffer = true;
+                BufferModeComboBox.SelectedItem = item;
+                _syncingBuffer = false;
+                _bufferMilliseconds = milliseconds;
+                BufferSlider.Value = milliseconds;
+                BufferValueText.Text = $"{milliseconds} ms";
+                return;
+            }
+        }
+
+        _syncingBuffer = true;
+        foreach (ComboBoxItem item in BufferModeComboBox.Items)
+        {
+            if (item.Tag?.ToString() == "-1")
+            {
+                BufferModeComboBox.SelectedItem = item;
+                break;
+            }
+        }
+        _syncingBuffer = false;
+        SetBufferMilliseconds(milliseconds, updateCombo: false);
     }
 
     private void OutputFormatComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)    {
@@ -2959,15 +3151,27 @@ public partial class MainWindow : Window
         {
             _syncingBandUi = true;
 
-            for (int i = 0; i < 10; i++)
+            bool savedPrecision = saved.PrecisionEq == true;
+            int savedBandCount = savedPrecision ? 15 : 10;
+
+            if (_bandCount != savedBandCount)
             {
-                if (saved.EqBands is { Length: 10 })
+                _bandCount = savedBandCount;
+                _precisionEq = savedPrecision;
+                BuildBandStrip();
+            }
+
+            ChkPrecisionEq.IsChecked = _precisionEq;
+
+            for (int i = 0; i < _bandCount; i++)
+            {
+                if (saved.EqBands is { Length: > 0 } && i < saved.EqBands.Length)
                     _eqBands[i] = Math.Clamp(saved.EqBands[i], -12, 12);
 
-                if (saved.EqFrequencies is { Length: 10 })
+                if (saved.EqFrequencies is { Length: > 0 } && i < saved.EqFrequencies.Length)
                     _eqFrequencies[i] = saved.EqFrequencies[i];
 
-                if (saved.EqQValues is { Length: 10 })
+                if (saved.EqQValues is { Length: > 0 } && i < saved.EqQValues.Length)
                     _eqQValues[i] = Math.Clamp(saved.EqQValues[i], 0.5, 10);
 
                 if (_eqSliders[i] != null)
@@ -3033,7 +3237,9 @@ public partial class MainWindow : Window
         SelectComboItemByTag(CaptureDeviceComboBox, saved.CaptureDeviceId);
         SelectComboItemByTag(DeviceComboBox, saved.OutputDeviceId);
         SelectComboItemByTag(OutputFormatComboBox, saved.OutputFormatTag);
-        SelectComboItemByTag(BufferModeComboBox, saved.BufferMilliseconds?.ToString());
+
+        if (saved.BufferMilliseconds.HasValue)
+            RestoreBufferMilliseconds(saved.BufferMilliseconds.Value);
 
         UpdatePresetEditability();
     }
@@ -3063,6 +3269,7 @@ public partial class MainWindow : Window
             EqBands = _eqBands.ToArray(),
             EqFrequencies = _eqFrequencies.ToArray(),
             EqQValues = _eqQValues.ToArray(),
+            PrecisionEq = _precisionEq,
             HrtfEnabled = ChkHrtf.IsChecked == true,
             HrtfIntensity = SliderHRTF.Value,
             SurroundWidth = SliderSurround.Value,
@@ -3283,7 +3490,7 @@ public partial class MainWindow : Window
 
         _syncingBandUi = true;
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < _bandCount; i++)
         {
             _eqBands[i] = 0;
 
@@ -3328,6 +3535,7 @@ public partial class MainWindow : Window
                 EQBands = _eqBands.Select(v => (float)v).ToArray(),
                 EQFrequencies = _eqFrequencies.Select(v => (float)v).ToArray(),
                 EQQValues = _eqQValues.Select(v => (float)v).ToArray(),
+                UsePrecisionEq = _precisionEq,
                 LowShelfFrequency = (float)_lowShelfFrequency,
                 LowShelfGain = (float)_lowShelfGain,
                 LowShelfQ = (float)_lowShelfQ,
@@ -3374,6 +3582,7 @@ public partial class MainWindow : Window
             currentPreset.EQBands = _eqBands.Select(v => (float)v).ToArray();
             currentPreset.EQFrequencies = _eqFrequencies.Select(v => (float)v).ToArray();
             currentPreset.EQQValues = _eqQValues.Select(v => (float)v).ToArray();
+            currentPreset.UsePrecisionEq = _precisionEq;
             currentPreset.LowShelfFrequency = (float)_lowShelfFrequency;
             currentPreset.LowShelfGain = (float)_lowShelfGain;
             currentPreset.LowShelfQ = (float)_lowShelfQ;

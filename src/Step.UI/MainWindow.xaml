@@ -590,6 +590,12 @@
                            FontSize="11.5" Foreground="{StaticResource BrText3}"
                            Margin="14,0,0,0" VerticalAlignment="Center"
                            Visibility="Collapsed"/>
+                <CheckBox Name="ChkPrecisionEq" Content="15 段精准"
+                          FontSize="12" Foreground="{StaticResource BrText2}"
+                          Margin="14,0,0,0" VerticalAlignment="Center"
+                          Visibility="Collapsed"
+                          Checked="ChkPrecisionEq_Changed"
+                          Unchecked="ChkPrecisionEq_Changed"/>
               </StackPanel>
               <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Name="BtnResetEQ" Style="{StaticResource GhostButton}" Content="重置"
@@ -751,7 +757,21 @@
               <StackPanel Grid.Column="1">
                 <ComboBox Name="BufferModeComboBox"
                           SelectionChanged="BufferModeComboBox_SelectionChanged"/>
-                <TextBlock Text="越大越稳定、延迟越高；越小延迟越低，出现爆音/卡顿就调大一档"
+                <Grid Margin="0,8,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <Slider Name="BufferSlider" Minimum="10" Maximum="300"
+                          TickFrequency="10" IsSnapToTickEnabled="False"
+                          Value="100" VerticalAlignment="Center"
+                          Foreground="{StaticResource BrAccent}"
+                          ValueChanged="BufferSlider_ValueChanged"/>
+                  <TextBlock Grid.Column="1" Name="BufferValueText" Text="100 ms"
+                             FontSize="12" Foreground="{StaticResource BrText2}"
+                             Width="64" TextAlignment="Right" VerticalAlignment="Center"/>
+                </Grid>
+                <TextBlock Text="可自定义 10–300 ms；越大越稳定、延迟越高，出现爆音/卡顿就调大"
                            FontSize="11.5" Foreground="{StaticResource BrText3}"
                            Margin="2,4,0,0" TextWrapping="Wrap"/>
               </StackPanel>
@@ -797,7 +817,7 @@
                          VerticalAlignment="Center"/>
               <CheckBox Grid.Column="1" Name="ChkAutoStart"
                         AutomationProperties.AutomationId="ChkAutoStart"
-                        Content="开机自动启动（最小化到任务栏）"
+                        Content="开机自动启动（最小化到托盘）"
                         Checked="ChkAutoStart_Changed"
                         Unchecked="ChkAutoStart_Changed"/>
             </Grid>

@@ -124,9 +124,10 @@ public class PresetManager
             Id = json.Id,
             Name = json.Name,
             Description = json.Description,
-            EQBands = NormalizeArray(json.EqBands, new float[10]),
+            EQBands = NormalizeArray(json.EqBands, new float[15]),
             EQFrequencies = NormalizeArray(json.EqFrequencies, DefaultFrequencies),
             EQQValues = NormalizeArray(json.EqQValues, DefaultQValues),
+            UsePrecisionEq = json.UsePrecisionEq,
             LowShelfFrequency = json.LowShelfFrequency,
             LowShelfGain = json.LowShelfGain,
             LowShelfQ = json.LowShelfQ,
@@ -142,12 +143,19 @@ public class PresetManager
         };
     }
 
-    private static readonly float[] DefaultFrequencies = { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 };
-    private static readonly float[] DefaultQValues = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    private static readonly float[] DefaultFrequencies =
+        { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 2500, 6300, 10000, 12500, 16000 };
+    private static readonly float[] DefaultQValues =
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
 
     private static float[] NormalizeArray(float[]? source, float[] fallback)
     {
-        return source is { Length: 10 } ? (float[])source.Clone() : (float[])fallback.Clone();
+        if (source is not { Length: 10 or 15 })
+            return (float[])fallback.Clone();
+
+        var result = (float[])fallback.Clone();
+        Array.Copy(source, result, source.Length);
+        return result;
     }
 
     /// <summary>
@@ -192,9 +200,10 @@ public class PresetManager
         if (target.HRTFIntensity != source.HrtfIntensity) { target.HRTFIntensity = source.HrtfIntensity; changed = true; }
         if (target.SurroundWidth != source.SurroundWidth) { target.SurroundWidth = source.SurroundWidth; changed = true; }
         if (target.BassBoost != source.BassBoost) { target.BassBoost = source.BassBoost; changed = true; }
+        if (target.UsePrecisionEq) { target.UsePrecisionEq = false; changed = true; }
         if (!target.IsBuiltIn) { target.IsBuiltIn = true; changed = true; }
 
-        var bands = NormalizeArray(source.EqBands, new float[10]);
+        var bands = NormalizeArray(source.EqBands, new float[15]);
         var frequencies = NormalizeArray(source.EqFrequencies, DefaultFrequencies);
         var qValues = NormalizeArray(source.EqQValues, DefaultQValues);
 
@@ -353,6 +362,7 @@ public class PresetManager
                     EqBands = p.EQBands,
                     EqFrequencies = p.EQFrequencies,
                     EqQValues = p.EQQValues,
+                    UsePrecisionEq = p.UsePrecisionEq,
                     LowShelfFrequency = p.LowShelfFrequency,
                     LowShelfGain = p.LowShelfGain,
                     LowShelfQ = p.LowShelfQ,
@@ -422,7 +432,10 @@ public class PresetManager
         public string Description { get; set; } = string.Empty;
 
         [JsonProperty("eqBands")]
-        public float[]? EqBands { get; set; } = new float[10];
+        public float[]? EqBands { get; set; }
+
+        [JsonProperty("usePrecisionEq")]
+        public bool UsePrecisionEq { get; set; }
 
         [JsonProperty("eqFrequencies")]
         public float[]? EqFrequencies { get; set; }

@@ -490,6 +490,14 @@ public class RealTimeAudioProcessor : IDisposable
     }
 
     /// <summary>
+    /// 一次性设置所有频段（同时切换 10/15 段精准模式）
+    /// </summary>
+    public void SetAllBands(float[] gains, float[] frequencies, float[] qFactors)
+    {
+        _equalizerEngine.SetAllBands(gains, frequencies, qFactors);
+    }
+
+    /// <summary>
     /// 设置单段 EQ 的中心频率与 Q 值
     /// </summary>
     public void SetEQBandParameters(int bandIndex, float frequencyHz, float q)

@@ -21,21 +21,26 @@ public class Preset
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// 10 段 EQ 增益 (dB)
-    /// 中心频率: 100Hz, 200Hz, 500Hz, 1kHz, 2kHz, 4kHz, 8kHz, 12kHz, 16kHz, 20kHz
-    /// 范围: -12dB 到 +12dB
+    /// EQ 增益 (dB)，最多 15 段。默认前 10 段为普通模式。
     /// </summary>
-    public float[] EQBands { get; set; } = new float[10];
+    public float[] EQBands { get; set; } = new float[15];
 
     /// <summary>
-    /// 10 段 EQ 中心频率 (Hz)，与 EQBands 一一对应
+    /// EQ 中心频率 (Hz)，与 EQBands 一一对应
     /// </summary>
-    public float[] EQFrequencies { get; set; } = { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 };
+    public float[] EQFrequencies { get; set; } =
+        { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 2500, 6300, 10000, 12500, 16000 };
 
     /// <summary>
-    /// 10 段 EQ 的 Q 值
+    /// EQ 的 Q 值
     /// </summary>
-    public float[] EQQValues { get; set; } = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+    public float[] EQQValues { get; set; } =
+        { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+
+    /// <summary>
+    /// 是否使用 15 段精准模式（仅自定义预设）
+    /// </summary>
+    public bool UsePrecisionEq { get; set; }
 
     /// <summary>低频搁架</summary>
     public float LowShelfFrequency { get; set; } = 100f;
@@ -107,6 +112,7 @@ public class Preset
             EQBands = (float[])EQBands.Clone(),
             EQFrequencies = (float[])EQFrequencies.Clone(),
             EQQValues = (float[])EQQValues.Clone(),
+            UsePrecisionEq = UsePrecisionEq,
             LowShelfFrequency = LowShelfFrequency,
             LowShelfGain = LowShelfGain,
             LowShelfQ = LowShelfQ,
@@ -128,8 +134,9 @@ public class Preset
     public void Reset()
     {
         Array.Clear(EQBands);
-        EQFrequencies = new float[] { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 };
-        EQQValues = new float[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+        EQFrequencies = new float[] { 32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000, 2500, 6300, 10000, 12500, 16000 };
+        EQQValues = new float[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+        UsePrecisionEq = false;
         LowShelfFrequency = 100f;
         LowShelfGain = 0f;
         LowShelfQ = 0.7f;
