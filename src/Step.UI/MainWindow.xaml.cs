@@ -1472,13 +1472,10 @@ public partial class MainWindow : Window
                     _eqQBoxes[i].Text = _eqQValues[i].ToString("0.0");
             }
 
-            // BassBoost 是低频倍率：折进 32/64Hz 两个低架，保证实时链路真的生效
-            float bassBoost = Math.Clamp(preset.BassBoost, 0.5f, 2.0f);
-
+            // BassBoost 旧字段不再叠加，低频由 32/64 段和低频搁架控制
             for (int i = 0; i < 10; i++)
             {
-                double gain = i < 2 ? preset.EQBands[i] * bassBoost : preset.EQBands[i];
-                _eqBands[i] = Math.Clamp(gain, -12, 12);
+                _eqBands[i] = Math.Clamp(preset.EQBands[i], -12, 12);
 
                 if (_eqSliders[i] != null)
                     _eqSliders[i].Value = _eqBands[i];

@@ -177,8 +177,8 @@ pwsh installer/build-installer.ps1
 输出：
 
 ```
-artifacts/installer/StepAudioDriver-1.7.0.msi
-artifacts/installer/StepAudioDriver-1.7.0.sha256
+artifacts/installer/StepAudioDriver-1.8.0.msi
+artifacts/installer/StepAudioDriver-1.8.0.sha256
 ```
 
 脚本会：
